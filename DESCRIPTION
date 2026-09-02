@@ -37,6 +37,7 @@ Imports:
 Suggests:
     covr,
     hubExamples,
+    jsonlite,
     testthat (>= 3.0.0)
 Remotes:
     hubverse-org/hubExamples
