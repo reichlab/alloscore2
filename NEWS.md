@@ -42,3 +42,12 @@
 
 * `weights.allocated()` and `alloscore.slim()` now match the signatures of their
   generics.
+
+* Added `as_alloscore_df()`, `allocate_model_out()` and `alloscore_model_out()`,
+  which take a hubverse `model_out_tbl` and `oracle_output` directly. Predictive
+  quantiles are turned into cdfs and quantile functions with `distfromq`, so the
+  conversion that callers used to hand-roll is no longer needed. Only the
+  `quantile` output type is supported.
+
+* Results agree with the original package to within root-finding tolerance; see
+  `tests/testthat/test-legacy-equivalence.R`.
