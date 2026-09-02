@@ -1,0 +1,22 @@
+# The allocation literature's notation is part of this package's public API:
+# `F` is a predictive cdf, `Q` a quantile function, `K` a budget, `O` and `U`
+# over- and under-prediction costs, `Lambda` a marginal expected benefit, and
+# `eps_K` / `qs_OK` are documented arguments and columns inherited from the
+# original alloscore package. The object name and T/F linters flag all of
+# those, so both are relaxed here rather than renaming public API.
+linters: linters_with_defaults(
+    line_length_linter = line_length_linter(120L),
+    commented_code_linter = NULL,
+    T_and_F_symbol_linter = NULL,
+    # Air is this project's formatter and owns indentation; the two disagree on
+    # how to indent a continued arithmetic expression.
+    indentation_linter = NULL,
+    object_name_linter = object_name_linter(
+      styles = c("snake_case", "symbols", "CamelCase", "UPPERCASE"),
+      regexes = c(math_notation = "^[A-Za-z][A-Za-z0-9]*(_[A-Za-z0-9]+)*$")
+    )
+  )
+exclusions: list(
+    "data-raw",
+    "tests/testthat" = list(object_usage_linter = Inf)
+  )
