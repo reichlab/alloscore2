@@ -34,8 +34,8 @@ dexp_gpl_df(gdf, F = list(pnorm, pnorm))
 #>     kappa * ((1 - alpha) * dexp_over_loss(dg = dg, F = F)(x) + 
 #>         alpha * dexp_under_loss(dg = dg, F = F)(x))
 #> }
-#> <bytecode: 0x557eded19f40>
-#> <environment: 0x557ee4f4ee70>
+#> <bytecode: 0x55c53bce71e8>
+#> <environment: 0x55c541f20f70>
 #> 
 #> [[2]]
 #> function (x) 
@@ -43,7 +43,7 @@ dexp_gpl_df(gdf, F = list(pnorm, pnorm))
 #>     kappa * ((1 - alpha) * dexp_over_loss(dg = dg, F = F)(x) + 
 #>         alpha * dexp_under_loss(dg = dg, F = F)(x))
 #> }
-#> <bytecode: 0x557eded19f40>
-#> <environment: 0x557ee4f54680>
+#> <bytecode: 0x55c53bce71e8>
+#> <environment: 0x55c541f22950>
 #> 
 ```
