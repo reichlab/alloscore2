@@ -73,6 +73,18 @@
 - [`pdqr_factory()`](https://reichlab.github.io/alloscore2/reference/pdqr_factory.md)
   : Build a p/d/q/r function with parameters fixed
 
+- [`plot_components()`](https://reichlab.github.io/alloscore2/reference/plot_components.md)
+  : Plot the per-target components of an allocation score
+
+- [`plot_components_slim()`](https://reichlab.github.io/alloscore2/reference/plot_components_slim.md)
+  : Plot the components of a slim scored allocation
+
+- [`plot_iterations()`](https://reichlab.github.io/alloscore2/reference/plot_iterations.md)
+  : Plot the allocation search for one budget
+
+- [`plot_scores_slim()`](https://reichlab.github.io/alloscore2/reference/plot_scores_slim.md)
+  : Plot allocation scores against the budget or over time
+
 - [`post_process()`](https://reichlab.github.io/alloscore2/reference/post_process.md)
   : Repair allocations left infeasible by plateaus in the objective
 

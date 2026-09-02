@@ -74,3 +74,26 @@
 
 - Results agree with the original package to within root-finding
   tolerance; see `tests/testthat/test-legacy-equivalence.R`.
+
+- Ported
+  [`plot_components()`](https://reichlab.github.io/alloscore2/reference/plot_components.md),
+  [`plot_components_slim()`](https://reichlab.github.io/alloscore2/reference/plot_components_slim.md),
+  [`plot_scores_slim()`](https://reichlab.github.io/alloscore2/reference/plot_scores_slim.md)
+  and
+  [`plot_iterations()`](https://reichlab.github.io/alloscore2/reference/plot_iterations.md).
+
+- [`plot_components()`](https://reichlab.github.io/alloscore2/reference/plot_components.md)
+  and
+  [`plot_scores_slim()`](https://reichlab.github.io/alloscore2/reference/plot_scores_slim.md)
+  work. They previously called the nonexistent
+  [`tidyr::any_of()`](https://tidyselect.r-lib.org/reference/all_of.html)
+  and referred to an undefined variable respectively.
+
+- [`plot_iterations()`](https://reichlab.github.io/alloscore2/reference/plot_iterations.md)
+  no longer calls [`require()`](https://rdrr.io/r/base/library.html) at
+  runtime; `patchwork` is a declared dependency. It also accepts a
+  single row of
+  [`allocate_model_out()`](https://reichlab.github.io/alloscore2/reference/allocate_model_out.md)
+  output, not only an `allocated` object.
+
+- Every ggplot2, forcats and scales call is namespaced and declared.

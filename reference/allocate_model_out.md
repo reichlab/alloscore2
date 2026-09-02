@@ -70,7 +70,9 @@ allocation unit columns and the columns returned by
 Unlike
 [`allocate()`](https://reichlab.github.io/alloscore2/reference/allocate.md)
 this is a plain tibble rather than an `allocated` object, since each
-unit has its own loss functions and weights.
+unit has its own loss functions and weights. A single row of it can
+still be passed to
+[`plot_iterations()`](https://reichlab.github.io/alloscore2/reference/plot_iterations.md).
 
 ## Examples
 

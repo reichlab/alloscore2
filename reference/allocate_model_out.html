@@ -102,7 +102,8 @@ or as a string in the variable <code>x</code> such as <code>"log(x)"</code>.</p>
     <p>A tibble with one row per allocation unit and value of <code>K</code>, holding
 the allocation unit columns and the columns returned by <code><a href="allocate.html">allocate()</a></code>. Unlike
 <code><a href="allocate.html">allocate()</a></code> this is a plain tibble rather than an <code>allocated</code> object, since
-each unit has its own loss functions and weights.</p>
+each unit has its own loss functions and weights. A single row of it can
+still be passed to <code><a href="plot_iterations.html">plot_iterations()</a></code>.</p>
     </div>
 
     <div class="section level2">
