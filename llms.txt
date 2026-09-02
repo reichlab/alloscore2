@@ -17,8 +17,18 @@ Under construction.
 - [`allocate()`](https://reichlab.github.io/alloscore2/reference/allocate.md)
   : Allocate a budget to minimize expected gpl loss
 
+- [`allocate_model_out()`](https://reichlab.github.io/alloscore2/reference/allocate_model_out.md)
+  : Allocate a budget across hubverse model output
+
 - [`alloscore()`](https://reichlab.github.io/alloscore2/reference/alloscore.md)
   : Score allocations against realized outcomes
+
+- [`alloscore_model_out()`](https://reichlab.github.io/alloscore2/reference/alloscore_model_out.md)
+  : Score hubverse model output with an allocation scoring rule
+
+- [`as_alloscore_df()`](https://reichlab.github.io/alloscore2/reference/as_alloscore_df.md)
+  : Convert hubverse model output into forecasts alloscore2 can allocate
+  against
 
 - [`dexp_gpl_df()`](https://reichlab.github.io/alloscore2/reference/dexp_gpl_df.md)
   :

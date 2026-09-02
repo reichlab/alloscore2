@@ -61,3 +61,16 @@
   and
   [`alloscore.slim()`](https://reichlab.github.io/alloscore2/reference/alloscore.md)
   now match the signatures of their generics.
+
+- Added
+  [`as_alloscore_df()`](https://reichlab.github.io/alloscore2/reference/as_alloscore_df.md),
+  [`allocate_model_out()`](https://reichlab.github.io/alloscore2/reference/allocate_model_out.md)
+  and
+  [`alloscore_model_out()`](https://reichlab.github.io/alloscore2/reference/alloscore_model_out.md),
+  which take a hubverse `model_out_tbl` and `oracle_output` directly.
+  Predictive quantiles are turned into cdfs and quantile functions with
+  `distfromq`, so the conversion that callers used to hand-roll is no
+  longer needed. Only the `quantile` output type is supported.
+
+- Results agree with the original package to within root-finding
+  tolerance; see `tests/testthat/test-legacy-equivalence.R`.
