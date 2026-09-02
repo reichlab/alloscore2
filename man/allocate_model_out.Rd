@@ -43,7 +43,8 @@ or as a string in the variable \code{x} such as \code{"log(x)"}.}
 A tibble with one row per allocation unit and value of \code{K}, holding
 the allocation unit columns and the columns returned by \code{\link[=allocate]{allocate()}}. Unlike
 \code{\link[=allocate]{allocate()}} this is a plain tibble rather than an \code{allocated} object, since
-each unit has its own loss functions and weights.
+each unit has its own loss functions and weights. A single row of it can
+still be passed to \code{\link[=plot_iterations]{plot_iterations()}}.
 }
 \description{
 Runs \code{\link[=allocate]{allocate()}} once per allocation unit of a hubverse model output table.

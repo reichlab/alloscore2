@@ -51,3 +51,16 @@
 
 * Results agree with the original package to within root-finding tolerance; see
   `tests/testthat/test-legacy-equivalence.R`.
+
+* Ported `plot_components()`, `plot_components_slim()`, `plot_scores_slim()` and
+  `plot_iterations()`.
+
+* `plot_components()` and `plot_scores_slim()` work. They previously called the
+  nonexistent `tidyr::any_of()` and referred to an undefined variable
+  respectively.
+
+* `plot_iterations()` no longer calls `require()` at runtime; `patchwork` is a
+  declared dependency. It also accepts a single row of `allocate_model_out()`
+  output, not only an `allocated` object.
+
+* Every ggplot2, forcats and scales call is namespaced and declared.

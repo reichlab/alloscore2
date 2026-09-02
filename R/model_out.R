@@ -180,7 +180,8 @@ make_target_key <- function(dat, target_cols) {
 #' @return A tibble with one row per allocation unit and value of `K`, holding
 #'   the allocation unit columns and the columns returned by [allocate()]. Unlike
 #'   [allocate()] this is a plain tibble rather than an `allocated` object, since
-#'   each unit has its own loss functions and weights.
+#'   each unit has its own loss functions and weights. A single row of it can
+#'   still be passed to [plot_iterations()].
 #'
 #' @examplesIf requireNamespace("hubExamples", quietly = TRUE)
 #' mot <- dplyr::filter(
