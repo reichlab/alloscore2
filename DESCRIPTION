@@ -24,9 +24,17 @@ Description:
 License: GPL (>= 3)
 Encoding: UTF-8
 Imports:
+    cli,
+    distfromq,
+    dplyr,
+    purrr,
     rlang,
-    stats
+    stats,
+    tibble,
+    tidyr,
+    tidyselect
 Suggests:
+    covr,
     testthat (>= 3.0.0)
 Depends:
     R (>= 4.1.0)
