@@ -27,6 +27,7 @@ Imports:
     cli,
     distfromq,
     dplyr,
+    hubUtils,
     purrr,
     rlang,
     stats,
@@ -35,7 +36,10 @@ Imports:
     tidyselect
 Suggests:
     covr,
+    hubExamples,
     testthat (>= 3.0.0)
+Remotes:
+    hubverse-org/hubExamples
 Depends:
     R (>= 4.1.0)
 LazyData: true
