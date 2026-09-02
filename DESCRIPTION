@@ -1,0 +1,39 @@
+Package: alloscore2
+Title: Allocation Scoring Rules for Hubverse Model Output
+Version: 0.0.0.9000
+Authors@R: c(
+    person(given = "Aaron",
+           family = "Gerding",
+           email = "agerding@umass.edu",
+           role = c("aut", "cph"),
+           comment = "Author of the original alloscore package"),
+    person(given = "Nicholas",
+           family = "Reich",
+           email = "nick@umass.edu",
+           role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0003-3503-9899"))
+    )
+Description:
+    Implements allocation scoring rules for evaluating probabilistic forecasts.
+    Given forecasts for several targets and a shared resource budget, an
+    allocation is computed by minimizing expected generalized piecewise linear
+    loss subject to the budget constraint, and forecasts are scored by the
+    realized loss of that allocation relative to the loss of an allocation made
+    by an oracle that knew the observed outcomes. Model output and observed
+    data are read in the formats used by the hubverse.
+License: GPL (>= 3)
+Encoding: UTF-8
+Imports:
+    rlang,
+    stats
+Suggests:
+    testthat (>= 3.0.0)
+Depends:
+    R (>= 4.1.0)
+LazyData: true
+Roxygen: list(markdown = TRUE)
+URL: https://reichlab.github.io/alloscore2/, https://github.com/reichlab/alloscore2
+BugReports: https://github.com/reichlab/alloscore2/issues
+Config/testthat/edition: 3
+Config/Needs/website: hubverse-org/hubStyle
+Config/roxygen2/version: 8.1.0
