@@ -64,3 +64,7 @@
   output, not only an `allocated` object.
 
 * Every ggplot2, forcats and scales call is namespaced and declared.
+
+* Added a README with runnable examples and two vignettes: an overview of
+  scoring hubverse forecasts, and the validation against published newsvendor
+  optima.

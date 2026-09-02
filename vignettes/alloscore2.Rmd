@@ -1,0 +1,271 @@
+---
+title: "Scoring hubverse forecasts by what they would allocate"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Scoring hubverse forecasts by what they would allocate}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4.5,
+  out.width = "100%"
+)
+```
+
+```{r setup, message = FALSE}
+library(alloscore2)
+library(dplyr)
+```
+
+## The idea
+
+Most forecast scores judge each prediction on its own. An allocation score
+instead asks what a whole vector of forecasts would have led you to *do* with a
+scarce resource, and then charges you for the consequences.
+
+Concretely: you have forecasts for $N$ targets and a budget $K$. You allocate
+$x_i$ to target $i$, paying $w_i$ per unit, so that $\sum_i w_i x_i \le K$. When
+the outcomes $y_i$ arrive, you incur a generalized piecewise linear loss
+
+$$L_i(x_i, y_i) = \kappa_i \left[ (1-\alpha_i)(x_i - y_i)_+ + \alpha_i (y_i - x_i)_+ \right],$$
+
+which with $\alpha_i$ near 1 punishes falling short much harder than
+overshooting. The score is the loss your allocation incurred, minus the loss of
+an allocation made by an oracle who knew the outcomes:
+
+$$S = \sum_i L_i(x_i, y_i) - \sum_i L_i(x_i^{\text{oracle}}, y_i).$$
+
+Because the budget is shared, this rewards getting the *relative* burden across
+targets right. A model can be beautifully calibrated at every location on its
+own and still allocate badly if it misjudges which locations matter most.
+
+## Scoring a hub's model output
+
+The forecast data in `hubExamples` is a standard hubverse `model_out_tbl`. We
+filter to the quantile output type, which is the one `alloscore2` supports.
+
+```{r data}
+model_out <- hubExamples::forecast_outputs |>
+  filter(output_type == "quantile")
+oracle_output <- hubExamples::forecast_oracle_output
+
+model_out |>
+  select(model_id, reference_date, horizon, location, output_type_id, value) |>
+  head()
+```
+
+### Choosing what shares a budget
+
+This is the one modeling decision the package cannot make for you. An allocation
+problem is a *set* of targets competing for one budget, so you have to say which
+task ID columns enumerate that set. Here we pool across locations, so
+`target_cols = "location"`.
+
+Everything else — `model_id` plus the remaining task IDs — becomes the
+*allocation unit*, and one problem is solved per combination. This follows the
+same logic as a hubverse `compound_taskid_set`: the columns you name vary within
+a group, and the rest are held constant.
+
+```{r as-alloscore-df}
+adf <- as_alloscore_df(model_out, oracle_output, target_cols = "location")
+adf
+```
+
+Each row holds one allocation problem. The `forecasts` column has a row per
+target, with the predictive quantiles (`ps`, `qs`), a cdf `F` and quantile
+function `Q` interpolated through them by
+[distfromq](https://github.com/reichlab/distfromq), and the observed outcome
+`y`:
+
+```{r one-unit}
+adf$forecasts[[1]] |> select(location, y, ps, qs)
+adf$forecasts[[1]]$F[[1]](100)
+```
+
+You rarely need to call `as_alloscore_df()` yourself — it is what
+`alloscore_model_out()` does internally — but it is the place to look when a
+join or a target set is not what you expected.
+
+### Scores
+
+```{r score}
+scores <- alloscore_model_out(
+  model_out_tbl = model_out,
+  oracle_output = oracle_output,
+  K = c(500, 1000, 2000, 4000),
+  target_cols = "location",
+  by = c("model_id", "K")
+)
+scores
+```
+
+Smaller is better. Note the `ytot` column: the total outcome across the pooled
+locations. Once $K$ exceeds it the oracle can cover everything and its loss
+falls to zero, so differences between models become differences in how well they
+spent a budget that was never really binding.
+
+### Per-target detail
+
+With `summarize = FALSE` you get one row per allocation problem and budget, plus
+a nested `xdf` holding the allocation, outcome and loss for each target.
+
+```{r detail}
+detail <- alloscore_model_out(
+  model_out_tbl = model_out,
+  oracle_output = oracle_output,
+  K = 2000,
+  target_cols = "location",
+  summarize = FALSE
+)
+detail |> select(model_id, reference_date, horizon, K, score)
+detail$xdf[[1]]
+```
+
+The `components` column is each target's contribution to the score. A positive
+value means the forecast sent too little or too much to that target relative to
+what the oracle would have done.
+
+## Costs that differ by target
+
+`w` is the cost of a unit allocated to a target. It can be a scalar, a vector
+named by target, or the name of a column of the model output. Making one
+location more expensive shifts the allocation away from it:
+
+```{r weights}
+one_round <- model_out |>
+  filter(reference_date == "2022-11-19", horizon == 0)
+
+bind_rows(
+  allocate_model_out(one_round, K = 1000, target_cols = "location") |>
+    mutate(weighting = "equal cost"),
+  allocate_model_out(
+    one_round,
+    K = 1000, target_cols = "location", w = c("25" = 1, "48" = 5)
+  ) |>
+    mutate(weighting = "location 48 five times dearer")
+) |>
+  select(weighting, model_id, xdf) |>
+  mutate(alloc = purrr::map(xdf, ~ select(.x, target_names, x))) |>
+  select(-xdf) |>
+  tidyr::unnest(alloc) |>
+  tidyr::pivot_wider(names_from = target_names, values_from = x)
+```
+
+## How much it hurts to fall short
+
+`alpha` is the quantile level of the underlying pinball loss, and it encodes how
+asymmetric the consequences are. The unconstrained optimum for a target is its
+`alpha`-quantile, so raising `alpha` buys more insurance against shortfalls.
+
+```{r alpha}
+purrr::map(
+  c(0.5, 0.8, 0.95, 1),
+  function(a) {
+    alloscore_model_out(
+      one_round,
+      oracle_output,
+      K = 2000,
+      target_cols = "location",
+      alpha = a,
+      by = "model_id"
+    ) |>
+      mutate(alpha = a)
+  }
+) |>
+  purrr::list_rbind() |>
+  select(alpha, model_id, score) |>
+  tidyr::pivot_wider(names_from = model_id, values_from = score)
+```
+
+## Looking inside the optimization
+
+The allocation is found by bisecting on a single Lagrange multiplier
+$\lambda$, the shadow price of the budget. At the optimum every target that
+receives anything has the same marginal expected benefit, and each allocation is
+that target's predictive quantile at a level discounted by $\lambda$.
+`plot_iterations()` shows that search.
+
+```{r iterations, fig.height = 5}
+alloc <- allocate_model_out(one_round, K = 2000, target_cols = "location")
+plot_iterations(dplyr::filter(alloc, model_id == "PSI-DICE"), K_to_plot = 2000)
+```
+
+The upper panel stacks the allocations, with the horizontal line at the budget;
+the lower panel tracks $\lambda$ and the interval bracketing it.
+
+## Score decomposition
+
+`plot_components_slim()` shows which targets a score came from. Over a grid of
+budgets it stacks each target's contribution.
+
+```{r components}
+scored <- alloscore_model_out(
+  model_out_tbl = one_round,
+  oracle_output = oracle_output,
+  K = seq(250, 4000, by = 250),
+  target_cols = "location",
+  summarize = FALSE
+)
+plot_components_slim(
+  scored,
+  model_col_name = "model_id",
+  show_oracle = FALSE
+)
+```
+
+## Scoring outside the hubverse
+
+The core functions take forecasts as a data frame with one row per target and
+list columns of cdfs and quantile functions, which `add_pdqr_funs()` builds from
+parameter columns for any distribution R knows.
+
+```{r core}
+forecasts <- add_pdqr_funs(
+  tibble::tibble(
+    target_names = c("a", "b", "c"),
+    dist = "norm",
+    mean = c(5, 8, 12),
+    sd = c(1, 2, 3)
+  ),
+  types = c("p", "q")
+)
+alloscore(forecasts, y = c(4, 9, 11), K = c(10, 20, 30)) |>
+  select(K, score, score_raw, score_oracle, ytot)
+```
+
+For Monte Carlo work — one allocation scored against many simulated outcome
+vectors — `slim()` strips the allocation down to what scoring needs, and
+`alloscore()` then accepts a list of outcome vectors.
+
+```{r monte-carlo}
+alloc <- slim(allocate(forecasts, K = c(10, 20, 30)))
+ys <- withr::with_seed(42, {
+  purrr::map(1:50, function(i) {
+    rlang::set_names(rexp(3, rate = 1 / 8), c("a", "b", "c"))
+  })
+})
+mc <- alloscore(alloc, ys)
+mc |>
+  select(samp, scores) |>
+  tidyr::unnest(scores) |>
+  group_by(K) |>
+  summarise(mean_score = mean(score), sd_score = sd(score), .groups = "drop")
+```
+
+## Caveats
+
+* Only the `quantile` output type is supported. Scoring `sample` output, which
+  would let the allocation respect dependence across targets rather than working
+  from marginals, is not implemented.
+* The budget constraint is enforced only to within `eps_K`, 1% by default. An
+  allocation may therefore overspend slightly, and since the oracle is held to
+  the budget exactly, a score can come out marginally negative. Tighten `eps_K`
+  if that matters for your application.
+* `oracle_allocate()` spends the whole budget even when the oracle has no use
+  for it, so the oracle allocation it reports is inflated for generous budgets.
+  The oracle's *loss*, and hence the score, is unaffected.

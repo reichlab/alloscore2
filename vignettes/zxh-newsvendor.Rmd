@@ -1,0 +1,236 @@
+---
+title: "Validation against published newsvendor optima"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Validation against published newsvendor optima}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4.5,
+  out.width = "100%"
+)
+```
+
+```{r setup, message = FALSE}
+library(alloscore2)
+library(dplyr)
+library(purrr)
+```
+
+## Why the newsvendor problem
+
+The optimization inside [allocate()] is not specific to forecast evaluation. It
+solves a budget-constrained separable convex program, and one classical instance
+of that is the *multiproduct newsboy problem with a budget constraint*: choose
+stock levels for several products, under uncertain demand, subject to a limit on
+total purchasing cost.
+
+That is useful here because the problem has a published literature with reported
+optima. Zhang, Xu and Hua (2009) give two worked examples, and this package
+ships their data in `zxh_tab2` and `zxh_tab3`. Reproducing their `Opt` column
+checks `allocate()` against an external source rather than against the package's
+own history.
+
+```{r data}
+zxh_tab2
+```
+
+## From newsvendor costs to gpl parameters
+
+The newsvendor parameterization uses three costs per product: `c` per unit
+purchased, `v` per unit of unmet demand, and `h` per unit left over. The gpl
+loss instead uses a scale `kappa` and a level `alpha`.
+`stdize_news_params()` converts between them, giving
+
+$$\kappa = h + v, \qquad \alpha = \frac{v - c}{h + v}.$$
+
+The `alpha` that falls out is the newsvendor's familiar critical ratio, and the
+unconstrained optimum is the `alpha`-quantile of demand.
+
+```{r reparam}
+zxh_norm <- zxh_tab2 |>
+  mutate(stdize_news_params(ax = c, a_minus = v, a_plus = h), .after = c) |>
+  as_tibble()
+zxh_norm |> select(Product, c, v, h, kappa, alpha, q_zxh)
+```
+
+## Building the demand distributions
+
+Demand is Normal here, so `add_pdqr_funs()` builds the cdf and quantile function
+from `mean` and `sd` columns. Evaluating each quantile function at its own
+`alpha` should recover the critical quantile that Zhang, Xu and Hua print in
+`q_zxh`.
+
+```{r forecasts}
+zxh_norm_forecasts <- zxh_norm |>
+  rename(mean = mu, sd = sigma) |>
+  add_pdqr_funs(dist = "norm", types = c("p", "q")) |>
+  mutate(q_ours = map2_dbl(Q, alpha, function(Q, alpha) Q(alpha)))
+
+zxh_norm_forecasts |>
+  select(Product, alpha, q_zxh, q_ours) |>
+  mutate(difference = q_ours - q_zxh)
+```
+
+## Allocating under the budget
+
+Zhang, Xu and Hua use a budget of 2500, with the unit cost `c` as the weight in
+the constraint. Passing `w = "c"` tells `allocate()` to take the weights from
+that column, and `target_names = "Product"` names the targets from another.
+
+```{r allocate}
+allo_norm <- allocate(
+  zxh_norm_forecasts,
+  w = "c",
+  K = 2500,
+  target_names = "Product"
+)
+
+comparison <- zxh_norm_forecasts |>
+  select(Product, c, GIM, Opt) |>
+  left_join(allo_norm$xdf[[1]], by = "Product") |>
+  select(Product, c, GIM, Opt, ours = x) |>
+  mutate(difference = ours - Opt)
+comparison
+```
+
+Two things to note. Only 6 of the 17 products are stocked at all, and they are
+exactly the 6 that Zhang, Xu and Hua stock — the budget binds hard enough that
+most products are shut out entirely, which is a useful test of the boundary
+handling. And the agreement is to within about a twentieth of a unit:
+
+```{r accuracy}
+c(
+  max_abs_difference = max(abs(comparison$difference)),
+  budget_spent = sum(comparison$c * comparison$ours),
+  budget_available = 2500,
+  n_stocked_ours = sum(comparison$ours > 1e-8),
+  n_stocked_zxh = sum(comparison$Opt > 0)
+)
+```
+
+The budget is spent to slightly over 2500. That is the `eps_K` tolerance, 1% by
+default: the bisection stops once the constraint is satisfied to within that
+relative tolerance rather than exactly.
+
+## Comparing objective values
+
+The comparison that really matters is not the allocation vector but the value of
+the objective, since the problem can have near-flat optima.
+`exp_gpl_loss_fun()` builds the expected loss for one product, including the
+purchasing cost as an offset.
+
+```{r objective}
+objective <- function(x) {
+  sum(pmap_dbl(
+    list(
+      zxh_norm_forecasts$F,
+      zxh_norm_forecasts$kappa,
+      zxh_norm_forecasts$alpha,
+      zxh_norm_forecasts$mean,
+      zxh_norm_forecasts$c,
+      x
+    ),
+    function(F, kappa, alpha, mean, c, x) {
+      exp_gpl_loss_fun(F = F, kappa = kappa, alpha = alpha, offset = c * mean)(x)
+    }
+  ))
+}
+
+c(
+  objective_at_zxh_opt = objective(comparison$Opt),
+  objective_at_ours = objective(comparison$ours),
+  objective_at_gim = objective(comparison$GIM)
+)
+```
+
+Our objective value is marginally lower than at the published optimum, which is
+what the slight overspend buys. Both are below the earlier
+Abdel-Malek and Montanari solution in the `GIM` column.
+
+## The search
+
+`plot_iterations()` shows the bisection on the shadow price of the budget. With
+the default tolerances it takes 15 steps, the last few of which barely move the
+allocation.
+
+```{r iterations, fig.height = 5}
+plot_iterations(allo_norm, num_targets_to_color = 6)
+```
+
+## A bounded support
+
+The second example uses Beta demand on $[x_{\min}, x_{\max}]$ rather than the
+whole real line. `add_pdqr_funs()` handles that with `trans` and `trans_inv`,
+which are composed onto the cdf and the quantile function respectively.
+
+```{r beta}
+zxh_beta_forecasts <- zxh_tab3 |>
+  mutate(stdize_news_params(ax = c, a_minus = v, a_plus = h), .after = c) |>
+  as_tibble() |>
+  rename(shape1 = Balpha, shape2 = Bbeta) |>
+  add_pdqr_funs(
+    types = c("p", "q"),
+    dist = "beta",
+    trans = function(x, x_min, x_max) (x - x_min) / (x_max - x_min),
+    trans_inv = function(q, x_min, x_max) x_min + (x_max - x_min) * q
+  )
+
+allo_beta <- allocate(
+  zxh_beta_forecasts,
+  w = "c",
+  K = 6500,
+  target_names = "Product"
+)
+
+zxh_beta_forecasts |>
+  select(Product, c, x_min, x_max, GIM, Opt) |>
+  left_join(allo_beta$xdf[[1]], by = "Product") |>
+  select(Product, c, x_min, x_max, GIM, Opt, ours = x) |>
+  mutate(difference = ours - Opt)
+```
+
+Every product is stocked here, and each allocation lands inside its own support.
+
+```{r beta-accuracy}
+beta_cmp <- zxh_beta_forecasts |>
+  select(Product, c, Opt, x_min, x_max) |>
+  left_join(allo_beta$xdf[[1]], by = "Product")
+c(
+  max_abs_difference = max(abs(beta_cmp$x - beta_cmp$Opt)),
+  budget_spent = sum(beta_cmp$c * beta_cmp$x),
+  budget_available = 6500,
+  all_within_support = all(beta_cmp$x >= beta_cmp$x_min & beta_cmp$x <= beta_cmp$x_max)
+)
+```
+
+## Other parameterizations
+
+Two more helpers convert application parameterizations into `kappa` and `alpha`:
+`stdize_ou_params()` takes explicit over- and under-prediction costs, and
+`stdize_met_params()` takes the cost-loss ratio used in the weather
+decision-analysis literature.
+
+```{r other-params}
+rbind(
+  newsvendor = stdize_news_params(ax = 4, a_minus = 7, a_plus = 1),
+  over_under = stdize_ou_params(O = 1, U = 3),
+  cost_loss = stdize_met_params(C = 2, L = 10)
+)
+```
+
+## References
+
+B. Zhang, X. Xu, and Z. Hua. "A binary solution method for the multiproduct
+newsboy problem with budget constraint." *International Journal of Production
+Economics*, 117(1):136-141, 2009.
+
+L. Abdel-Malek and R. Montanari. "An analysis of the multi-product newsboy
+problem with a budget constraint." *International Journal of Production
+Economics*, 97(3):296-307, 2005.

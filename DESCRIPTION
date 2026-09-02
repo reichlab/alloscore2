@@ -43,7 +43,10 @@ Suggests:
     covr,
     hubExamples,
     jsonlite,
-    testthat (>= 3.0.0)
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0),
+    withr
 Remotes:
     hubverse-org/hubExamples
 Depends:
@@ -54,4 +57,5 @@ URL: https://reichlab.github.io/alloscore2/, https://github.com/reichlab/allosco
 BugReports: https://github.com/reichlab/alloscore2/issues
 Config/testthat/edition: 3
 Config/Needs/website: hubverse-org/hubStyle
+VignetteBuilder: knitr
 Config/roxygen2/version: 8.1.0
