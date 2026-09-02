@@ -34,9 +34,23 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.0.9000" id="alloscore2-0009000">alloscore2 0.0.0.9000<a class="anchor" aria-label="anchor" href="#alloscore2-0009000"></a></h2>
-<ul><li>Initial package setup: repository layout, GitHub Actions workflows for <code>R CMD check</code>, lint, format, test coverage and pkgdown, and the Air and lintr configuration.</li>
+<ul><li><p>Initial package setup: repository layout, GitHub Actions workflows for <code>R CMD check</code>, lint, format, test coverage and pkgdown, and the Air and lintr configuration.</p></li>
+<li><p>Ported the allocation and scoring machinery from the original <a href="https://github.com/aaronger/alloscore" class="external-link">alloscore</a>: <code><a href="../reference/allocate.html">allocate()</a></code>, <code><a href="../reference/alloscore.html">alloscore()</a></code> and its methods, <code><a href="../reference/post_process.html">post_process()</a></code>, the oracle functions, the gpl loss family, <code><a href="../reference/add_pdqr_funs.html">add_pdqr_funs()</a></code>, <code><a href="../reference/slim.html">slim()</a></code>, the <code>stdize_*_params()</code> helpers and the <code>zxh_tab2</code> and <code>zxh_tab3</code> datasets.</p></li>
+</ul><div class="section level3">
+<h3 id="bug-fixes-relative-to-the-original-package-0-0-0-9000">Bug fixes relative to the original package<a class="anchor" aria-label="anchor" href="#bug-fixes-relative-to-the-original-package-0-0-0-9000"></a></h3>
+<ul><li><p>The <code>O</code>/<code>U</code> over/under-cost parameterization now works. <code><a href="../reference/gpl_loss_fun.html">gpl_loss_fun()</a></code> and <code><a href="../reference/exp_gpl_loss_fun.html">exp_gpl_loss_fun()</a></code> previously errored on it and <code><a href="../reference/dexp_gpl_loss.html">dexp_gpl_loss()</a></code> silently returned <code>NULL</code>.</p></li>
+<li><p>A supplied <code>dg</code> is now honored instead of being silently discarded and recomputed from <code>g</code>.</p></li>
+<li><p><code><a href="../reference/exp_gpl_loss_fun.html">exp_gpl_loss_fun()</a></code> now applies its <code>offset</code> argument, which was accepted and ignored.</p></li>
+<li><p><code><a href="../reference/new_gpl_df.html">new_gpl_df()</a></code> can infer <code>N</code> from its arguments; the code path referred to an undefined variable.</p></li>
+<li><p><code><a href="../reference/alloscore.html">alloscore()</a></code> on a <code>slim</code> object now honors <code>against_oracle</code>, which was accepted and ignored.</p></li>
+<li><p><code><a href="../reference/allocate.html">allocate()</a></code> returns a well-formed <code>allocated</code> object when no target has any marginal benefit. It previously returned a data frame with no <code>xdf</code> column, no class and no attributes, which nothing downstream could consume.</p></li>
+<li><p><code><a href="../reference/allocate.html">allocate()</a></code> now fails with a clear message when <code>g</code> has an unbounded derivative at zero, as <code>g = "log(x)"</code> does. It previously emitted messages and returned its initial iterate unchanged. Use a shifted increment function such as <code>g = "log(1 + x)"</code>.</p></li>
+<li><p>Every dplyr and tidyr call is namespaced and declared. The original package only worked with the tidyverse attached.</p></li>
+<li><p><code><a href="../reference/weights.allocated.html">weights.allocated()</a></code> and <code><a href="../reference/alloscore.html">alloscore.slim()</a></code> now match the signatures of their generics.</p></li>
 </ul></div>
-  </main></div>
+</div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">
