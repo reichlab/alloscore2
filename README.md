@@ -33,6 +33,15 @@ Gerding, and reproduces its numerical results; see
 remotes::install_github("reichlab/alloscore2")
 ```
 
+## Getting started
+
+`vignette("alloscore2")` — [read it
+online](https://reichlab.io/alloscore2/articles/alloscore2.html) — is
+the guided tour: choosing which targets share a budget, reading the
+scores and their per-target decomposition, varying the unit costs `w`
+and the asymmetry `alpha`, and looking inside the optimization with the
+plotting functions. The sections below are the short version.
+
 ## Scoring hubverse model output
 
 `alloscore_model_out()` takes a `model_out_tbl` of quantile forecasts

@@ -22,6 +22,11 @@ library(alloscore2)
 library(dplyr)
 ```
 
+## Acknowledgment
+
+This vignette adapts content from [the original `alloscore` package](https://github.com/aaronger/alloscore) written by Aaron Gerding. It was drafted by Claude Code (Opus 5) and reviewed for accuracy by Nick Reich.
+
+
 ## The idea
 
 Most forecast scores judge each prediction on its own. An allocation score
@@ -35,16 +40,19 @@ the outcomes $y_i$ arrive, you incur a generalized piecewise linear loss
 $$L_i(x_i, y_i) = \kappa_i \left[ (1-\alpha_i)(x_i - y_i)_+ + \alpha_i (y_i - x_i)_+ \right],$$
 
 which with $\alpha_i$ near 1 punishes falling short much harder than
-overshooting. The score is the loss your allocation incurred, minus the loss of
+overshooting. 
+Note also that $\kappa_i$ scales that loss — the cost per unit of error at target $i$ — so the pair splits into an over-cost $\kappa_i(1-\alpha_i)$ and an under-cost $\kappa_i\alpha_i$. 
+Both $\alpha_i$ and $\kappa_i$ default to 1 in this package's computations.
+
+The score is the loss your allocation incurred, minus the loss of
 an allocation made by an oracle who knew the outcomes:
 
 $$S = \sum_i L_i(x_i, y_i) - \sum_i L_i(x_i^{\text{oracle}}, y_i).$$
 
 Because the budget is shared, this rewards getting the *relative* burden across
-targets right. A model can be beautifully calibrated at every location on its
-own and still allocate badly if it misjudges which locations matter most.
+targets right.
 
-## Scoring a hub's model output
+## Looking at some forecast data
 
 The forecast data in `hubExamples` is a standard hubverse `model_out_tbl`. We
 filter to the quantile output type, which is the one `alloscore2` supports.
@@ -59,6 +67,56 @@ model_out |>
   head()
 ```
 
+### What's in the example data
+
+`hubExamples::forecast_outputs` is a small slice of a FluSight-style hub: three
+models forecasting weekly incident influenza hospitalizations in two states,
+FIPS 25 (Massachusetts) and 48 (Texas), from two reference dates in the 2022–23
+season, at horizons 0 to 3 weeks ahead. Each forecast has seven predictive quantiles.
+
+```{r data-summary}
+model_out |>
+  select(model_id, target, location, reference_date, horizon, output_type_id) |>
+  tidyr::pivot_longer(
+    everything(),
+    names_to = "column",
+    values_transform = as.character
+  ) |>
+  summarise(
+    n = n_distinct(value),
+    values = paste(sort(unique(value)), collapse = ", "),
+    .by = column
+  )
+```
+
+That is $3 \times 1 \times 2 \times 2 \times 4 \times 7 = 336$ rows. Each
+(model, reference date, horizon) combination therefore covers exactly two
+locations, and those two are the set that will share a budget below.
+
+The observed outcomes come from `hubExamples::forecast_oracle_output`, the full
+FluSight target series for every location and week; `as_alloscore_df()` joins in
+only the rows it needs, matching on `target`, `target_end_date` and `location`.
+For the weeks these forecasts cover:
+
+```{r observed}
+oracle_output |>
+  filter(
+    output_type == "quantile",
+    location %in% unique(model_out$location),
+    target_end_date %in% unique(model_out$target_end_date)
+  ) |>
+  select(location, target_end_date, oracle_value) |>
+  tidyr::pivot_wider(
+    names_from = location, values_from = oracle_value, names_prefix = "loc_"
+  )
+```
+
+Texas runs roughly three to fifteen times Massachusetts week to week, and the
+two together range from about 1,300 to 2,600 hospitalizations. That is the scale
+to keep in mind when reading budgets: $K = 500$ is severely binding, while
+$K = 4000$ covers any week outright.
+
+
 ### Choosing what shares a budget
 
 This is the one modeling decision the package cannot make for you. An allocation
@@ -67,19 +125,22 @@ task ID columns enumerate that set. Here we pool across locations, so
 `target_cols = "location"`.
 
 Everything else — `model_id` plus the remaining task IDs — becomes the
-*allocation unit*, and one problem is solved per combination. This follows the
+*allocation unit*, and one allocation problem is solved per combination. This follows the
 same logic as a hubverse `compound_taskid_set`: the columns you name vary within
-a group, and the rest are held constant.
+a group, and the rest are held constant. In the example below, we are preparing 
+to make allocations based on the forecasts from the model in `model_id`, made 
+for all the locations at a specific `reference_date`, `target`, `horizon` and 
+`target_end_date`.
 
 ```{r as-alloscore-df}
 adf <- as_alloscore_df(model_out, oracle_output, target_cols = "location")
 adf
 ```
 
-Each row holds one allocation problem. The `forecasts` column has a row per
+Each row in the table above holds one allocation problem. The `forecasts` column has a row per
 target, with the predictive quantiles (`ps`, `qs`), a cdf `F` and quantile
 function `Q` interpolated through them by
-[distfromq](https://github.com/reichlab/distfromq), and the observed outcome
+[distfromq](https://reichlab.io/distfromq/), and the observed outcome
 `y`:
 
 ```{r one-unit}
@@ -87,11 +148,36 @@ adf$forecasts[[1]] |> select(location, y, ps, qs)
 adf$forecasts[[1]]$F[[1]](100)
 ```
 
-You rarely need to call `as_alloscore_df()` yourself — it is what
+Above, `adf$forecasts[[1]]$F[[1]]` is the cumulative distribution function of the first target's predictive distribution, fit by `distfromq` through that row's ps/qs pairs — you call it at a value on the outcome scale and it returns the forecast probability that the outcome falls at or below that value.
+So the printed value above is `F[[1]]` evaluated at the value of 100, and can be read as "what probability did this model put on location 25 seeing 100 or fewer?". And Q[[1]] is its inverse, taking a probability in $[0,1]$ back to the outcome scale.
+
+Note that you rarely need to call `as_alloscore_df()` yourself — it is what
 `alloscore_model_out()` does internally — but it is the place to look when a
 join or a target set is not what you expected.
 
-### Scores
+## Allocating without scoring
+
+If you have a forecast and a budget but don't have the eventual observations to score against yet, you can use `allocate_model_out()`, which stops after the allocation step. This is useful when the
+question is what a forecast implies you should do rather than how good it was:
+
+```{r example-allocate}
+allocate_model_out(
+  model_out_tbl = filter(model_out, reference_date == "2022-11-19", horizon == 0),
+  K = 1000,
+  target_cols = "location"
+) |>
+  select(model_id, K, xdf) |>
+  mutate(allocations = purrr::map(xdf, ~ select(.x, target_names, x))) |>
+  select(-xdf) |>
+  tidyr::unnest(allocations)
+```
+
+In the above output, `x` is the column giving you the suggested allocations from each model for each location.
+
+
+## Allocation scores
+
+However, the focus of this package is on scoring different choices of allocations based on a model's forecast. Here is code to do that, for a variety of different budgets $K$.
 
 ```{r score}
 scores <- alloscore_model_out(
@@ -104,12 +190,14 @@ scores <- alloscore_model_out(
 scores
 ```
 
-Smaller is better. Note the `ytot` column: the total outcome across the pooled
+Smaller scores are better. Note the `ytot` column: the total outcome across the pooled
 locations. Once $K$ exceeds it the oracle can cover everything and its loss
 falls to zero, so differences between models become differences in how well they
 spent a budget that was never really binding.
 
-### Per-target detail
+Note that scores are differences of losses against an oracle, so they in theory should never be below zero. However, small negative values can occur in practice (see results above) as an artifact of the `eps_K` argument to `allocate()` or `alloscore_model_out()`, which lets the forecaster's allocation overspend the budget by up to 1% while the oracle is held to $K$ exactly, and it shrinks toward zero as you tighten that tolerance.
+
+### Digging into per-target details
 
 With `summarize = FALSE` you get one row per allocation problem and budget, plus
 a nested `xdf` holding the allocation, outcome and loss for each target.
@@ -122,13 +210,13 @@ detail <- alloscore_model_out(
   target_cols = "location",
   summarize = FALSE
 )
-detail |> select(model_id, reference_date, horizon, K, score)
-detail$xdf[[1]]
+detail |> select(model_id, reference_date, horizon, K, score, xdf)
+detail$xdf[[2]]
 ```
 
-The `components` column is each target's contribution to the score. A positive
-value means the forecast sent too little or too much to that target relative to
-what the oracle would have done.
+The `components` column is each target's contribution to the overall allocation score. 
+In the above case, the model's total shortfall was 163 against the oracle's 150, and the 13-unit gap (the `score` in row 2 of the detail tibble) is precisely what it overspent on location 25 (234 against a need of 221). 
+With alpha = 1, a binding budget makes the score simply the budget wasted on targets that didn't need it — overshooting 25 is not penalized directly (its `components_raw` is 0), but it is penalized because those units were unavailable to location 48.
 
 ## Costs that differ by target
 
@@ -156,6 +244,8 @@ bind_rows(
   tidyr::pivot_wider(names_from = target_names, values_from = x)
 ```
 
+In the results shown above, the total "cost" of the allocation shown in the rightmost rows are always the same (the sum of the value in column `25` plus five times the sum of the value in `48` is 1000 +/- 1%) but because it is more expensive to allocate to location 48 there are fewer resources deployed there in rows 4-6.
+
 ## How much it hurts to fall short
 
 `alpha` is the quantile level of the underlying pinball loss, and it encodes how
@@ -182,6 +272,8 @@ purrr::map(
   tidyr::pivot_wider(names_from = model_id, values_from = score)
 ```
 
+The above results show that PSI-DICE allocates best at every asymmetry level, Flusight-baseline worst — by a widening margin as alpha rises, since its tight, low predictive distributions leave shortfalls that grow costlier — while at alpha = 1 all three score zero because the unbounded optimum makes each spend the full budget, which at $K = 2000$ covers this week's total of 1309 outright.
+
 ## Looking inside the optimization
 
 The allocation is found by bisecting on a single Lagrange multiplier
@@ -197,6 +289,9 @@ plot_iterations(dplyr::filter(alloc, model_id == "PSI-DICE"), K_to_plot = 2000)
 
 The upper panel stacks the allocations, with the horizontal line at the budget;
 the lower panel tracks $\lambda$ and the interval bracketing it.
+
+Loosely, $\lambda$ is what one more unit of budget would be worth — how much expected loss it would save — so it is large when the budget is tight and falls to zero once the budget stops binding.
+With equal costs and weights it also has a direct reading: instead of covering each target up to its $\alpha$-quantile, you can only afford its $(\alpha - \lambda)$-quantile, and $\lambda$ is the same for every target that gets anything. At $\alpha = 0.95$ and $\lambda = 0.1$, each location is stocked to its 85th percentile rather than its 95th.
 
 ## Score decomposition
 

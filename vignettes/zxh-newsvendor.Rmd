@@ -23,6 +23,12 @@ library(dplyr)
 library(purrr)
 ```
 
+## Acknowledgment
+
+This vignette adapts content from [the original `alloscore` package](https://github.com/aaronger/alloscore) written by Aaron Gerding, specifically from [a vignette](https://github.com/aaronger/alloscore/blob/main/vignettes/zxh_demo.Rmd) that shows how to reproduce results from Zhang, Xu and Hua (2009).
+
+This vignette was drafted by Claude Code (Opus 5) and reviewed for accuracy by Nick Reich.
+
 ## Why the newsvendor problem
 
 The optimization inside [allocate()] is not specific to forecast evaluation. It
