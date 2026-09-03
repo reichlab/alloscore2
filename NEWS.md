@@ -1,3 +1,5 @@
+# alloscore2 0.1.0.9000
+
 # alloscore2 0.1.0
 
 * Initial package setup: repository layout, GitHub Actions workflows for
