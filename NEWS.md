@@ -1,4 +1,4 @@
-# alloscore2 0.0.0.9000
+# alloscore2 0.1.0
 
 * Initial package setup: repository layout, GitHub Actions workflows for
   `R CMD check`, lint, format, test coverage and pkgdown, and the Air and lintr
@@ -9,6 +9,22 @@
   `alloscore()` and its methods, `post_process()`, the oracle functions, the gpl
   loss family, `add_pdqr_funs()`, `slim()`, the `stdize_*_params()` helpers and
   the `zxh_tab2` and `zxh_tab3` datasets.
+
+* Ported `plot_components()`, `plot_components_slim()`, `plot_scores_slim()` and
+  `plot_iterations()`.
+
+* Added `as_alloscore_df()`, `allocate_model_out()` and `alloscore_model_out()`,
+  which take a hubverse `model_out_tbl` and `oracle_output` directly. Predictive
+  quantiles are turned into cdfs and quantile functions with `distfromq`, so the
+  conversion that callers used to hand-roll is no longer needed. Only the
+  `quantile` output type is supported.
+
+* Added a README with runnable examples and two vignettes: an overview of
+  scoring hubverse forecasts, and the validation against published newsvendor
+  optima.
+
+* Results agree with the original package to within root-finding tolerance; see
+  `tests/testthat/test-legacy-equivalence.R`.
 
 ## Bug fixes relative to the original package
 
@@ -43,18 +59,6 @@
 * `weights.allocated()` and `alloscore.slim()` now match the signatures of their
   generics.
 
-* Added `as_alloscore_df()`, `allocate_model_out()` and `alloscore_model_out()`,
-  which take a hubverse `model_out_tbl` and `oracle_output` directly. Predictive
-  quantiles are turned into cdfs and quantile functions with `distfromq`, so the
-  conversion that callers used to hand-roll is no longer needed. Only the
-  `quantile` output type is supported.
-
-* Results agree with the original package to within root-finding tolerance; see
-  `tests/testthat/test-legacy-equivalence.R`.
-
-* Ported `plot_components()`, `plot_components_slim()`, `plot_scores_slim()` and
-  `plot_iterations()`.
-
 * `plot_components()` and `plot_scores_slim()` work. They previously called the
   nonexistent `tidyr::any_of()` and referred to an undefined variable
   respectively.
@@ -64,7 +68,3 @@
   output, not only an `allocated` object.
 
 * Every ggplot2, forcats and scales call is namespaced and declared.
-
-* Added a README with runnable examples and two vignettes: an overview of
-  scoring hubverse forecasts, and the validation against published newsvendor
-  optima.
