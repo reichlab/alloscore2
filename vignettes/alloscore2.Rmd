@@ -244,7 +244,7 @@ bind_rows(
   tidyr::pivot_wider(names_from = target_names, values_from = x)
 ```
 
-In the results shown above, the total "cost" of the allocation shown in the rightmost rows are always the same (the sum of the value in column `25` plus five times the sum of the value in `48` is 1000 +/- 1%) but because it is more expensive to allocate to location 48 there are fewer resources deployed there in rows 4-6.
+Every row spends the full budget of 1000, but the arithmetic differs: in the first three rows a unit costs 1 everywhere, so the two allocations sum to 1000, while in the last three each unit at location 48 costs 5, so `25` + 5 × `48` is 1000 and only about 250 units of resource are deployed in total.
 
 ## How much it hurts to fall short
 
