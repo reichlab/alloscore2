@@ -21,7 +21,7 @@ plot_iterations(
 - adf:
 
   an `allocated` object; see
-  [`allocate()`](https://reichlab.github.io/alloscore2/reference/allocate.md).
+  [`allocate()`](https://reichlab.io/alloscore2/reference/allocate.md).
 
 - K_to_plot:
 

@@ -4,7 +4,7 @@ The marginal expected benefit of allocating to target `i` is
 \$\$\Lambda_i(x) = -\frac{1}{w_i}\frac{d}{dx} E L_i(x, Y_i) =
 \frac{\kappa_i}{w_i} g'(x) (\alpha_i - F_i(x)),\$\$ a decreasing
 function of `x`.
-[`allocate()`](https://reichlab.github.io/alloscore2/reference/allocate.md)
+[`allocate()`](https://reichlab.io/alloscore2/reference/allocate.md)
 equalizes it across targets.
 
 ## Usage
@@ -18,7 +18,7 @@ meb_gpl_df(df, F, w)
 - df:
 
   a `gpl_df`, as created by
-  [`new_gpl_df()`](https://reichlab.github.io/alloscore2/reference/new_gpl_df.md).
+  [`new_gpl_df()`](https://reichlab.io/alloscore2/reference/new_gpl_df.md).
 
 - F:
 

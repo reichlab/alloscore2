@@ -1,129 +1,318 @@
 # alloscore2
 
-Allocation scoring rules for hubverse model output.
+`alloscore2` scores probabilistic forecasts by what they would have done
+with a scarce resource.
 
-A rewrite of [alloscore](https://github.com/aaronger/alloscore) that
-reads hubverse-formatted model output and target data.
+Given forecasts for several targets and a shared budget `K`, it
+allocates that budget to minimize expected loss, then scores the
+forecasts by the loss the allocation actually incurred, relative to the
+loss of an allocation made by an oracle that knew the outcomes in
+advance. A forecast that would have directed resources well scores near
+zero; one that would have misdirected them scores badly, however good
+its marginal calibration looks.
 
-Under construction.
+It reads [hubverse](https://hubverse.io) model output and target data
+directly. It is a rewrite of the original
+[alloscore](https://github.com/aaronger/alloscore) package by Aaron
+Gerding, and reproduces its numerical results; see
+`tests/testthat/test-legacy-equivalence.R`.
+
+## Installation
+
+``` r
+
+remotes::install_github("reichlab/alloscore2")
+```
+
+## Getting started
+
+[`vignette("alloscore2")`](https://reichlab.io/alloscore2/articles/alloscore2.md)
+— [read it
+online](https://reichlab.io/alloscore2/articles/alloscore2.html) — is
+the guided tour: choosing which targets share a budget, reading the
+scores and their per-target decomposition, varying the unit costs `w`
+and the asymmetry `alpha`, and looking inside the optimization with the
+plotting functions. The sections below are the short version.
+
+## Scoring hubverse model output
+
+[`alloscore_model_out()`](https://reichlab.io/alloscore2/reference/alloscore_model_out.md)
+takes a `model_out_tbl` of quantile forecasts and the matching
+`oracle_output`. The one thing you have to tell it is which task ID
+columns enumerate the targets that *share* a budget — here the
+locations, so each model, reference date and horizon is a separate
+allocation problem.
+
+``` r
+
+library(alloscore2)
+library(dplyr)
+
+model_out <- hubExamples::forecast_outputs |>
+  filter(output_type == "quantile")
+
+scores <- alloscore_model_out(
+  model_out_tbl = model_out,
+  oracle_output = hubExamples::forecast_oracle_output,
+  K = c(500, 1000, 2000),
+  target_cols = "location",
+  by = c("model_id", "K")
+)
+scores
+#> # A tibble: 9 × 6
+#>   model_id              K    score score_raw score_oracle  ytot
+#>   <chr>             <dbl>    <dbl>     <dbl>        <dbl> <dbl>
+#> 1 Flusight-baseline   500 -0.00553     1544.        1544. 2044.
+#> 2 Flusight-baseline  1000  0.342       1045.        1044. 2044.
+#> 3 Flusight-baseline  2000 50.7          228.         177. 2044.
+#> 4 MOBS-GLEAM_FLUH     500 -0.427       1544.        1544. 2044.
+#> 5 MOBS-GLEAM_FLUH    1000 -0.464       1044.        1044. 2044.
+#> 6 MOBS-GLEAM_FLUH    2000 29.4          207.         177. 2044.
+#> 7 PSI-DICE            500 -0.173       1544.        1544. 2044.
+#> 8 PSI-DICE           1000 -0.263       1044.        1044. 2044.
+#> 9 PSI-DICE           2000 53.1          230.         177. 2044.
+```
+
+The score is the realized loss less the oracle’s, so smaller is better.
+Because the budget is shared across locations, a model is rewarded for
+getting the *relative* burden across locations right, not just each
+location on its own.
+
+Passing `summarize = FALSE` returns one row per allocation problem, with
+a nested `xdf` column holding each target’s allocation, outcome and
+loss:
+
+``` r
+
+detail <- alloscore_model_out(
+  model_out_tbl = model_out,
+  oracle_output = hubExamples::forecast_oracle_output,
+  K = 1000,
+  target_cols = "location",
+  summarize = FALSE
+)
+detail$xdf[[1]]
+#> # A tibble: 2 × 8
+#>   target_names     x score_fun     y oracle components_raw components_oracle components
+#>   <chr>        <dbl> <list>    <dbl>  <dbl>          <dbl>             <dbl>      <dbl>
+#> 1 25            32.3 <fn>         79   73.2           46.7              5.78       40.9
+#> 2 48           968.  <fn>       1230  927.           262.             303.        -40.9
+```
+
+## Allocating without scoring
+
+[`allocate_model_out()`](https://reichlab.io/alloscore2/reference/allocate_model_out.md)
+stops after the allocation, which is useful when the question is what a
+forecast implies you should do rather than how good it was:
+
+``` r
+
+allocate_model_out(
+  model_out_tbl = filter(model_out, reference_date == "2022-11-19", horizon == 0),
+  K = 1000,
+  target_cols = "location"
+) |>
+  select(model_id, K, xdf) |>
+  mutate(allocations = purrr::map(xdf, ~ select(.x, target_names, x))) |>
+  select(-xdf) |>
+  tidyr::unnest(allocations)
+#> # A tibble: 6 × 4
+#>   model_id              K target_names     x
+#>   <chr>             <dbl> <chr>        <dbl>
+#> 1 Flusight-baseline  1000 25            32.3
+#> 2 Flusight-baseline  1000 48           968. 
+#> 3 MOBS-GLEAM_FLUH    1000 25            30.2
+#> 4 MOBS-GLEAM_FLUH    1000 48           970. 
+#> 5 PSI-DICE           1000 25            32.5
+#> 6 PSI-DICE           1000 48           967.
+```
+
+## Working outside the hubverse
+
+The allocation machinery does not require hub data. Forecasts can be
+given as any parametric family, with
+[`add_pdqr_funs()`](https://reichlab.io/alloscore2/reference/add_pdqr_funs.md)
+building the cdfs and quantile functions from parameter columns:
+
+``` r
+
+forecasts <- add_pdqr_funs(
+  tibble::tibble(
+    target_names = c("a", "b", "c"),
+    dist = "norm",
+    mean = c(5, 8, 12),
+    sd = c(1, 2, 3)
+  ),
+  types = c("p", "q")
+)
+
+alloscore(forecasts, y = c(4, 9, 11), K = c(10, 20, 30)) |>
+  select(K, score, score_raw, score_oracle)
+#> # A tibble: 3 × 4
+#>       K  score score_raw score_oracle
+#>   <dbl>  <dbl>     <dbl>        <dbl>
+#> 1    10 0.0154     14.0            14
+#> 2    20 0.167       4.17            4
+#> 3    30 0           0               0
+```
+
+The loss is a generalized piecewise linear (pinball) loss, so `alpha`
+sets how much worse it is to under-allocate than to over-allocate,
+`kappa` scales it, and `w` gives the cost per unit allocated to each
+target. The
+[`stdize_news_params()`](https://reichlab.io/alloscore2/reference/stdize_news_params.md),
+[`stdize_ou_params()`](https://reichlab.io/alloscore2/reference/stdize_ou_params.md)
+and
+[`stdize_met_params()`](https://reichlab.io/alloscore2/reference/stdize_met_params.md)
+helpers convert the newsvendor, over/under-cost and cost-loss
+parameterizations into `kappa` and `alpha`.
+
+## Validation
+
+The `zxh_tab2` and `zxh_tab3` datasets carry the published optima of two
+budget-constrained multiproduct newsboy problems from Zhang, Xu and Hua
+(2009), which
+[`allocate()`](https://reichlab.io/alloscore2/reference/allocate.md)
+reproduces. See
+[`vignette("zxh-newsvendor")`](https://reichlab.io/alloscore2/articles/zxh-newsvendor.md).
+
+## Code of Conduct
+
+Please note that this package is released with a [Contributor Code of
+Conduct](https://reichlab.io/alloscore2/CODE_OF_CONDUCT.md). By
+contributing to this project, you agree to abide by its terms.
+
+## Contributing
+
+Interested in contributing back to the project? Please see our
+[contributing
+guidelines](https://reichlab.io/alloscore2/CONTRIBUTING.md).
 
 # Package index
 
 ## All functions
 
-- [`add_pdqr_funs()`](https://reichlab.github.io/alloscore2/reference/add_pdqr_funs.md)
+- [`add_pdqr_funs()`](https://reichlab.io/alloscore2/reference/add_pdqr_funs.md)
   : Add list columns of p/d/q/r functions to a forecast data frame
 
-- [`allocate()`](https://reichlab.github.io/alloscore2/reference/allocate.md)
-  : Allocate a budget to minimize expected gpl loss
+- [`allocate()`](https://reichlab.io/alloscore2/reference/allocate.md) :
+  Allocate a budget to minimize expected gpl loss
 
-- [`allocate_model_out()`](https://reichlab.github.io/alloscore2/reference/allocate_model_out.md)
+- [`allocate_model_out()`](https://reichlab.io/alloscore2/reference/allocate_model_out.md)
   : Allocate a budget across hubverse model output
 
-- [`alloscore()`](https://reichlab.github.io/alloscore2/reference/alloscore.md)
+- [`alloscore()`](https://reichlab.io/alloscore2/reference/alloscore.md)
   : Score allocations against realized outcomes
 
-- [`alloscore_model_out()`](https://reichlab.github.io/alloscore2/reference/alloscore_model_out.md)
+- [`alloscore_model_out()`](https://reichlab.io/alloscore2/reference/alloscore_model_out.md)
   : Score hubverse model output with an allocation scoring rule
 
-- [`as_alloscore_df()`](https://reichlab.github.io/alloscore2/reference/as_alloscore_df.md)
+- [`as_alloscore_df()`](https://reichlab.io/alloscore2/reference/as_alloscore_df.md)
   : Convert hubverse model output into forecasts alloscore2 can allocate
   against
 
-- [`dexp_gpl_df()`](https://reichlab.github.io/alloscore2/reference/dexp_gpl_df.md)
+- [`dexp_gpl_df()`](https://reichlab.io/alloscore2/reference/dexp_gpl_df.md)
   :
 
   Create a list of derivatives of expected gpl losses from a `gpl_df`
 
-- [`dexp_gpl_loss()`](https://reichlab.github.io/alloscore2/reference/dexp_gpl_loss.md)
+- [`dexp_gpl_loss()`](https://reichlab.io/alloscore2/reference/dexp_gpl_loss.md)
   : Derivative of the expected gpl loss
 
-- [`dexp_over_loss()`](https://reichlab.github.io/alloscore2/reference/dexp_over_loss.md)
+- [`dexp_over_loss()`](https://reichlab.io/alloscore2/reference/dexp_over_loss.md)
   : Derivative of the expected over-prediction loss
 
-- [`dexp_under_loss()`](https://reichlab.github.io/alloscore2/reference/dexp_under_loss.md)
+- [`dexp_under_loss()`](https://reichlab.io/alloscore2/reference/dexp_under_loss.md)
   : Derivative of the expected under-prediction loss
 
-- [`exp_gpl_loss_fun()`](https://reichlab.github.io/alloscore2/reference/exp_gpl_loss_fun.md)
+- [`exp_gpl_loss_fun()`](https://reichlab.io/alloscore2/reference/exp_gpl_loss_fun.md)
   : Create an expected gpl loss function
 
-- [`exp_over_loss()`](https://reichlab.github.io/alloscore2/reference/exp_over_loss.md)
+- [`exp_over_loss()`](https://reichlab.io/alloscore2/reference/exp_over_loss.md)
   : Expected g-linear loss for over-prediction of a random outcome
 
-- [`exp_under_loss()`](https://reichlab.github.io/alloscore2/reference/exp_under_loss.md)
+- [`exp_under_loss()`](https://reichlab.io/alloscore2/reference/exp_under_loss.md)
   : Expected g-linear loss for under-prediction of a random outcome
 
-- [`gpl()`](https://reichlab.github.io/alloscore2/reference/gpl.md) :
-  Get the gpl loss data frame of an allocation
+- [`gpl()`](https://reichlab.io/alloscore2/reference/gpl.md) : Get the
+  gpl loss data frame of an allocation
 
-- [`gpl_loss_fun()`](https://reichlab.github.io/alloscore2/reference/gpl_loss_fun.md)
+- [`gpl_loss_fun()`](https://reichlab.io/alloscore2/reference/gpl_loss_fun.md)
   : Create a generalized piecewise linear (gpl) loss function
 
-- [`meb_gpl_df()`](https://reichlab.github.io/alloscore2/reference/meb_gpl_df.md)
+- [`meb_gpl_df()`](https://reichlab.io/alloscore2/reference/meb_gpl_df.md)
   :
 
   Create marginal expected benefit functions for a `gpl_df`
 
-- [`new_gpl_df()`](https://reichlab.github.io/alloscore2/reference/new_gpl_df.md)
+- [`new_gpl_df()`](https://reichlab.io/alloscore2/reference/new_gpl_df.md)
   : Create a data frame of gpl loss functions and their parameters
 
-- [`oracle_allocate()`](https://reichlab.github.io/alloscore2/reference/oracle_allocate.md)
+- [`oracle_allocate()`](https://reichlab.io/alloscore2/reference/oracle_allocate.md)
   : Allocate as an oracle that knows the observed outcomes
 
-- [`oracle_allocate_direct()`](https://reichlab.github.io/alloscore2/reference/oracle_allocate_direct.md)
+- [`oracle_allocate_direct()`](https://reichlab.io/alloscore2/reference/oracle_allocate_direct.md)
   : Find the oracle allocation directly
 
-- [`oracle_alloscore_direct()`](https://reichlab.github.io/alloscore2/reference/oracle_alloscore_direct.md)
+- [`oracle_alloscore_direct()`](https://reichlab.io/alloscore2/reference/oracle_alloscore_direct.md)
   : Find and score the oracle allocation directly
 
-- [`over_loss()`](https://reichlab.github.io/alloscore2/reference/over_loss.md)
+- [`over_loss()`](https://reichlab.io/alloscore2/reference/over_loss.md)
   : Basic g-linear loss for over-prediction of an outcome
 
-- [`pdqr_factory()`](https://reichlab.github.io/alloscore2/reference/pdqr_factory.md)
+- [`pdqr_factory()`](https://reichlab.io/alloscore2/reference/pdqr_factory.md)
   : Build a p/d/q/r function with parameters fixed
 
-- [`plot_components()`](https://reichlab.github.io/alloscore2/reference/plot_components.md)
+- [`plot_components()`](https://reichlab.io/alloscore2/reference/plot_components.md)
   : Plot the per-target components of an allocation score
 
-- [`plot_components_slim()`](https://reichlab.github.io/alloscore2/reference/plot_components_slim.md)
+- [`plot_components_slim()`](https://reichlab.io/alloscore2/reference/plot_components_slim.md)
   : Plot the components of a slim scored allocation
 
-- [`plot_iterations()`](https://reichlab.github.io/alloscore2/reference/plot_iterations.md)
+- [`plot_iterations()`](https://reichlab.io/alloscore2/reference/plot_iterations.md)
   : Plot the allocation search for one budget
 
-- [`plot_scores_slim()`](https://reichlab.github.io/alloscore2/reference/plot_scores_slim.md)
+- [`plot_scores_slim()`](https://reichlab.io/alloscore2/reference/plot_scores_slim.md)
   : Plot allocation scores against the budget or over time
 
-- [`post_process()`](https://reichlab.github.io/alloscore2/reference/post_process.md)
+- [`post_process()`](https://reichlab.io/alloscore2/reference/post_process.md)
   : Repair allocations left infeasible by plateaus in the objective
 
-- [`slim()`](https://reichlab.github.io/alloscore2/reference/slim.md) :
-  Drop the heavy list columns of an allocated data frame
+- [`slim()`](https://reichlab.io/alloscore2/reference/slim.md) : Drop
+  the heavy list columns of an allocated data frame
 
-- [`stdize_met_params()`](https://reichlab.github.io/alloscore2/reference/stdize_met_params.md)
+- [`stdize_met_params()`](https://reichlab.io/alloscore2/reference/stdize_met_params.md)
   :
 
   Convert meteorologist parameters to `kappa` and `alpha`
 
-- [`stdize_news_params()`](https://reichlab.github.io/alloscore2/reference/stdize_news_params.md)
+- [`stdize_news_params()`](https://reichlab.io/alloscore2/reference/stdize_news_params.md)
   :
 
   Convert newsvendor parameters to `kappa` and `alpha`
 
-- [`stdize_ou_params()`](https://reichlab.github.io/alloscore2/reference/stdize_ou_params.md)
+- [`stdize_ou_params()`](https://reichlab.io/alloscore2/reference/stdize_ou_params.md)
   :
 
   Convert over/under-prediction costs to `kappa` and `alpha`
 
-- [`under_loss()`](https://reichlab.github.io/alloscore2/reference/under_loss.md)
+- [`under_loss()`](https://reichlab.io/alloscore2/reference/under_loss.md)
   : Basic g-linear loss for under-prediction of an outcome
 
-- [`weights(`*`<allocated>`*`)`](https://reichlab.github.io/alloscore2/reference/weights.allocated.md)
+- [`weights(`*`<allocated>`*`)`](https://reichlab.io/alloscore2/reference/weights.allocated.md)
   : Get the weights of an allocated data frame
 
-- [`zxh_tab2`](https://reichlab.github.io/alloscore2/reference/zxh_tab2.md)
-  : Multiproduct newsboy data with Normal demand
+- [`zxh_tab2`](https://reichlab.io/alloscore2/reference/zxh_tab2.md) :
+  Multiproduct newsboy data with Normal demand
 
-- [`zxh_tab3`](https://reichlab.github.io/alloscore2/reference/zxh_tab3.md)
-  : Multiproduct newsboy data with Beta demand
+- [`zxh_tab3`](https://reichlab.io/alloscore2/reference/zxh_tab3.md) :
+  Multiproduct newsboy data with Beta demand
 
+# Articles
+
+### All vignettes
+
+- [Scoring hubverse forecasts by what they would
+  allocate](https://reichlab.io/alloscore2/articles/alloscore2.md):
+- [Validation against published newsvendor
+  optima](https://reichlab.io/alloscore2/articles/zxh-newsvendor.md):

@@ -1,9 +1,9 @@
 # Allocate a budget across hubverse model output
 
 Runs
-[`allocate()`](https://reichlab.github.io/alloscore2/reference/allocate.md)
+[`allocate()`](https://reichlab.io/alloscore2/reference/allocate.md)
 once per allocation unit of a hubverse model output table. See
-[`as_alloscore_df()`](https://reichlab.github.io/alloscore2/reference/as_alloscore_df.md)
+[`as_alloscore_df()`](https://reichlab.io/alloscore2/reference/as_alloscore_df.md)
 for how allocation units are determined.
 
 ## Usage
@@ -60,19 +60,19 @@ allocate_model_out(
 - ...:
 
   further arguments passed to
-  [`allocate()`](https://reichlab.github.io/alloscore2/reference/allocate.md).
+  [`allocate()`](https://reichlab.io/alloscore2/reference/allocate.md).
 
 ## Value
 
 A tibble with one row per allocation unit and value of `K`, holding the
 allocation unit columns and the columns returned by
-[`allocate()`](https://reichlab.github.io/alloscore2/reference/allocate.md).
+[`allocate()`](https://reichlab.io/alloscore2/reference/allocate.md).
 Unlike
-[`allocate()`](https://reichlab.github.io/alloscore2/reference/allocate.md)
+[`allocate()`](https://reichlab.io/alloscore2/reference/allocate.md)
 this is a plain tibble rather than an `allocated` object, since each
 unit has its own loss functions and weights. A single row of it can
 still be passed to
-[`plot_iterations()`](https://reichlab.github.io/alloscore2/reference/plot_iterations.md).
+[`plot_iterations()`](https://reichlab.io/alloscore2/reference/plot_iterations.md).
 
 ## Examples
 

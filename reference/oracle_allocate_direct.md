@@ -1,10 +1,10 @@
 # Find the oracle allocation directly
 
 A closed form for the oracle's allocation, avoiding the machinery of
-[`allocate()`](https://reichlab.github.io/alloscore2/reference/allocate.md).
-If the observed outcomes are affordable the oracle allocates exactly
-those; otherwise it scales them down proportionally. Assumes all targets
-share the same gpl parameters and that `g` is the identity.
+[`allocate()`](https://reichlab.io/alloscore2/reference/allocate.md). If
+the observed outcomes are affordable the oracle allocates exactly those;
+otherwise it scales them down proportionally. Assumes all targets share
+the same gpl parameters and that `g` is the identity.
 
 ## Usage
 

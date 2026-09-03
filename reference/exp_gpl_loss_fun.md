@@ -1,7 +1,7 @@
 # Create an expected gpl loss function
 
 This is the per-target contribution to the objective minimized by
-[`allocate()`](https://reichlab.github.io/alloscore2/reference/allocate.md).
+[`allocate()`](https://reichlab.io/alloscore2/reference/allocate.md).
 
 ## Usage
 
@@ -49,7 +49,7 @@ exp_gpl_loss_fun(
 - offset:
 
   a constant added to the expected loss. Unlike
-  [`gpl_loss_fun()`](https://reichlab.github.io/alloscore2/reference/gpl_loss_fun.md),
+  [`gpl_loss_fun()`](https://reichlab.io/alloscore2/reference/gpl_loss_fun.md),
   a function-valued `offset` is not supported here, since its
   expectation would itself require integration.
 

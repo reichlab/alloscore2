@@ -3,10 +3,10 @@
 Solves \$\$\min_x \sum_i E\_{Y_i \sim F_i} L_i(x_i, Y_i)
 \quad\text{subject to}\quad \sum_i w_i x_i \le K,\\ x_i \ge 0,\$\$ where
 each \\L_i\\ is a generalized piecewise linear loss (see
-[`gpl_loss_fun()`](https://reichlab.github.io/alloscore2/reference/gpl_loss_fun.md)).
+[`gpl_loss_fun()`](https://reichlab.io/alloscore2/reference/gpl_loss_fun.md)).
 The problem is separable and convex, so at the optimum the marginal
 expected benefit \\\Lambda_i\\ (see
-[`meb_gpl_df()`](https://reichlab.github.io/alloscore2/reference/meb_gpl_df.md))
+[`meb_gpl_df()`](https://reichlab.io/alloscore2/reference/meb_gpl_df.md))
 is equal across all targets receiving a positive allocation.
 `allocate()` bisects on that common value \\\lambda\\, inverting
 \\\Lambda_i\\ for each target at each step. All values of `K` are solved

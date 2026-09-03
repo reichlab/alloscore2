@@ -1,12 +1,12 @@
 # Allocate as an oracle that knows the observed outcomes
 
 Runs
-[`allocate()`](https://reichlab.github.io/alloscore2/reference/allocate.md)
+[`allocate()`](https://reichlab.io/alloscore2/reference/allocate.md)
 with degenerate predictive distributions that place all of their
 probability on the observed outcomes, giving the allocation against
 which a forecaster's allocation is scored. Because those distributions
 are point masses, the objective is piecewise constant and
-[`post_process()`](https://reichlab.github.io/alloscore2/reference/post_process.md)
+[`post_process()`](https://reichlab.io/alloscore2/reference/post_process.md)
 is always needed.
 
 ## Usage
@@ -20,7 +20,7 @@ oracle_allocate(gpl_df, y, K, w = 1, ...)
 - gpl_df:
 
   a `gpl_df` (see
-  [`new_gpl_df()`](https://reichlab.github.io/alloscore2/reference/new_gpl_df.md))
+  [`new_gpl_df()`](https://reichlab.io/alloscore2/reference/new_gpl_df.md))
   or an `allocated` object, from which the loss parameters and weights
   are taken.
 
@@ -39,12 +39,12 @@ oracle_allocate(gpl_df, y, K, w = 1, ...)
 - ...:
 
   further arguments passed to
-  [`allocate()`](https://reichlab.github.io/alloscore2/reference/allocate.md).
+  [`allocate()`](https://reichlab.io/alloscore2/reference/allocate.md).
 
 ## Value
 
 An `allocated` tibble; see
-[`allocate()`](https://reichlab.github.io/alloscore2/reference/allocate.md).
+[`allocate()`](https://reichlab.io/alloscore2/reference/allocate.md).
 
 ## Examples
 

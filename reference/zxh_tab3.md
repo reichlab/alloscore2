@@ -5,7 +5,7 @@ with a budget of `K = 6500` and the unit cost `c` as the allocation
 weight. The demand distributions are Beta distributions rescaled onto
 `[x_min, x_max]`, so working with them requires the `trans` and
 `trans_inv` arguments of
-[`add_pdqr_funs()`](https://reichlab.github.io/alloscore2/reference/add_pdqr_funs.md).
+[`add_pdqr_funs()`](https://reichlab.io/alloscore2/reference/add_pdqr_funs.md).
 
 ## Usage
 
@@ -70,5 +70,5 @@ Econ., vol. 117, no. 1, pp. 136-141, 2009.
 
 ## See also
 
-[zxh_tab2](https://reichlab.github.io/alloscore2/reference/zxh_tab2.md)
-for the Normal-demand example.
+[zxh_tab2](https://reichlab.io/alloscore2/reference/zxh_tab2.md) for the
+Normal-demand example.

@@ -2,7 +2,7 @@
 
 The objective has flat stretches wherever a predictive distribution has
 a point mass – always, for the degenerate distributions used by
-[`oracle_allocate()`](https://reichlab.github.io/alloscore2/reference/oracle_allocate.md)
+[`oracle_allocate()`](https://reichlab.io/alloscore2/reference/oracle_allocate.md)
 – so bisection on lambda can stall at an allocation that does not
 exhaust the budget. This finds bracketing vectors `x_L` and `x_U` and
 interpolates between them to hit the budget exactly.

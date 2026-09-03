@@ -22,7 +22,7 @@ slim(
 - adf:
 
   an `allocated` object, as returned by
-  [`allocate()`](https://reichlab.github.io/alloscore2/reference/allocate.md).
+  [`allocate()`](https://reichlab.io/alloscore2/reference/allocate.md).
 
 - xdf_action:
 
@@ -42,7 +42,7 @@ slim(
 
   drop the per-target scoring closure from an unscored data frame.
   Defaults to `FALSE`, since it is what
-  [`alloscore.slim()`](https://reichlab.github.io/alloscore2/reference/alloscore.md)
+  [`alloscore.slim()`](https://reichlab.io/alloscore2/reference/alloscore.md)
   scores with.
 
 ## Value

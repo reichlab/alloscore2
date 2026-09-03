@@ -4,7 +4,7 @@ Given a data frame with one row per target, a `dist` column (or a `dist`
 argument) naming a distribution, and columns for that distribution's
 parameters, adds list columns holding the corresponding cdf, density,
 quantile function and/or random generator.
-[`allocate()`](https://reichlab.github.io/alloscore2/reference/allocate.md)
+[`allocate()`](https://reichlab.io/alloscore2/reference/allocate.md)
 needs only the cdf (`"p"`) and quantile function (`"q"`).
 
 ## Usage

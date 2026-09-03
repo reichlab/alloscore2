@@ -14,13 +14,13 @@ Source:
 [`DESCRIPTION`](https://github.com/reichlab/alloscore2/blob/main/DESCRIPTION)
 
 Gerding A, Reich N (2026). *alloscore2: Allocation Scoring Rules for
-Hubverse Model Output*. R package version 0.0.0.9000,
-<https://reichlab.github.io/alloscore2/>.
+Hubverse Model Output*. R package version 0.1.0,
+<https://reichlab.io/alloscore2/>.
 
     @Manual{,
       title = {alloscore2: Allocation Scoring Rules for Hubverse Model Output},
       author = {Aaron Gerding and Nicholas Reich},
       year = {2026},
-      note = {R package version 0.0.0.9000},
-      url = {https://reichlab.github.io/alloscore2/},
+      note = {R package version 0.1.0},
+      url = {https://reichlab.io/alloscore2/},
     }

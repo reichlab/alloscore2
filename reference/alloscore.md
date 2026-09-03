@@ -42,10 +42,10 @@ alloscore(df, ys, against_oracle = TRUE, ...)
 - df:
 
   a data frame of forecasts, an `allocated` object (as returned by
-  [`allocate()`](https://reichlab.github.io/alloscore2/reference/allocate.md)),
+  [`allocate()`](https://reichlab.io/alloscore2/reference/allocate.md)),
   or a `slim` object (as returned by
-  [`slim()`](https://reichlab.github.io/alloscore2/reference/slim.md)).
-  The method dispatched on determines which further arguments apply.
+  [`slim()`](https://reichlab.io/alloscore2/reference/slim.md)). The
+  method dispatched on determines which further arguments apply.
 
 - ...:
 
@@ -113,7 +113,7 @@ alloscore(df, ys, against_oracle = TRUE, ...)
 - slim:
 
   logical; if `TRUE`, drop the heavy list columns before scoring. See
-  [`slim()`](https://reichlab.github.io/alloscore2/reference/slim.md).
+  [`slim()`](https://reichlab.io/alloscore2/reference/slim.md).
 
 - ys:
 
@@ -123,7 +123,7 @@ alloscore(df, ys, against_oracle = TRUE, ...)
 ## Value
 
 A tibble of the form returned by
-[`allocate()`](https://reichlab.github.io/alloscore2/reference/allocate.md),
+[`allocate()`](https://reichlab.io/alloscore2/reference/allocate.md),
 with the class `scored` prepended and additional columns
 
 - components_raw:
@@ -164,7 +164,7 @@ with the class `scored` prepended and additional columns
 
 - `alloscore(slim)`: Scores a slim allocation against many outcome
   vectors, for Monte Carlo work. Uses
-  [`oracle_alloscore_direct()`](https://reichlab.github.io/alloscore2/reference/oracle_alloscore_direct.md)
+  [`oracle_alloscore_direct()`](https://reichlab.io/alloscore2/reference/oracle_alloscore_direct.md)
   rather than a full oracle allocation.
 
 ## Examples

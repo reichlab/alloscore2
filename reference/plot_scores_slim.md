@@ -29,7 +29,7 @@ plot_scores_slim(
 - slim_df:
 
   a slim scored allocation; see
-  [`slim()`](https://reichlab.github.io/alloscore2/reference/slim.md).
+  [`slim()`](https://reichlab.io/alloscore2/reference/slim.md).
 
 - Ks:
 

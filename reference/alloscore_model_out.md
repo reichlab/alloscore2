@@ -4,9 +4,9 @@ For each allocation unit of a hubverse model output table, allocates a
 budget under the model's forecasts and scores the realized loss of that
 allocation relative to the loss of an oracle that knew the observed
 outcomes. See
-[`as_alloscore_df()`](https://reichlab.github.io/alloscore2/reference/as_alloscore_df.md)
+[`as_alloscore_df()`](https://reichlab.io/alloscore2/reference/as_alloscore_df.md)
 for how allocation units are determined, and
-[`alloscore()`](https://reichlab.github.io/alloscore2/reference/alloscore.md)
+[`alloscore()`](https://reichlab.io/alloscore2/reference/alloscore.md)
 for the score itself.
 
 ## Usage
@@ -86,7 +86,7 @@ alloscore_model_out(
 - ...:
 
   further arguments passed to
-  [`allocate()`](https://reichlab.github.io/alloscore2/reference/allocate.md).
+  [`allocate()`](https://reichlab.io/alloscore2/reference/allocate.md).
 
 ## Value
 

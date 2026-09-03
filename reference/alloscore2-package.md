@@ -13,7 +13,7 @@ hubverse.
 
 Useful links:
 
-- <https://reichlab.github.io/alloscore2/>
+- <https://reichlab.io/alloscore2/>
 
 - <https://github.com/reichlab/alloscore2>
 

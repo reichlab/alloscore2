@@ -4,7 +4,7 @@ Data transcribed from Table 2 of Zhang, Xu and Hua (2009), used there
 with a budget of `K = 2500` and the unit cost `c` as the allocation
 weight. The `Opt` column holds the published optimal solution, which
 makes this dataset an external check on
-[`allocate()`](https://reichlab.github.io/alloscore2/reference/allocate.md).
+[`allocate()`](https://reichlab.io/alloscore2/reference/allocate.md).
 
 ## Usage
 
@@ -61,5 +61,5 @@ Econ., vol. 117, no. 1, pp. 136-141, 2009.
 
 ## See also
 
-[zxh_tab3](https://reichlab.github.io/alloscore2/reference/zxh_tab3.md)
-for the Beta-demand example.
+[zxh_tab3](https://reichlab.io/alloscore2/reference/zxh_tab3.md) for the
+Beta-demand example.

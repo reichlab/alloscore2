@@ -22,7 +22,7 @@
     <a href="https://hubdocs.readthedocs.io/en/latest/" class="external-link"><img src="https://raw.githubusercontent.com/hubverse-org/hubStyle/main/inst/hubverse.png" id="logo" height="30" alt="hubverse"></a>
     <a class="navbar-brand me-2" href="index.html">alloscore2</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Unreleased version">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,7 +35,14 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json">
 </form></li>
+<li class="nav-item"><a class="nav-link" href="articles/alloscore2.html">Get started</a></li>
 <li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-articles">
+<li><a class="dropdown-item" href="articles/zxh-newsvendor.html">Validation against published newsvendor optima</a></li>
+  </ul>
+</li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/reichlab/alloscore2/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
@@ -48,9 +55,134 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="alloscore2">alloscore2<a class="anchor" aria-label="anchor" href="#alloscore2"></a>
 </h1></div>
-<p>Allocation scoring rules for hubverse model output.</p>
-<p>A rewrite of <a href="https://github.com/aaronger/alloscore" class="external-link">alloscore</a> that reads hubverse-formatted model output and target data.</p>
-<p>Under construction.</p>
+<!-- badges: start -->
+
+<p><code>alloscore2</code> scores probabilistic forecasts by what they would have done with a scarce resource.</p>
+<p>Given forecasts for several targets and a shared budget <code>K</code>, it allocates that budget to minimize expected loss, then scores the forecasts by the loss the allocation actually incurred, relative to the loss of an allocation made by an oracle that knew the outcomes in advance. A forecast that would have directed resources well scores near zero; one that would have misdirected them scores badly, however good its marginal calibration looks.</p>
+<p>It reads <a href="https://hubverse.io" class="external-link">hubverse</a> model output and target data directly. It is a rewrite of the original <a href="https://github.com/aaronger/alloscore" class="external-link">alloscore</a> package by Aaron Gerding, and reproduces its numerical results; see <code>tests/testthat/test-legacy-equivalence.R</code>.</p>
+<div class="section level2">
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"reichlab/alloscore2"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="getting-started">Getting started<a class="anchor" aria-label="anchor" href="#getting-started"></a>
+</h2>
+<p><code><a href="articles/alloscore2.html">vignette("alloscore2")</a></code> — <a href="https://reichlab.io/alloscore2/articles/alloscore2.html">read it online</a> — is the guided tour: choosing which targets share a budget, reading the scores and their per-target decomposition, varying the unit costs <code>w</code> and the asymmetry <code>alpha</code>, and looking inside the optimization with the plotting functions. The sections below are the short version.</p>
+</div>
+<div class="section level2">
+<h2 id="scoring-hubverse-model-output">Scoring hubverse model output<a class="anchor" aria-label="anchor" href="#scoring-hubverse-model-output"></a>
+</h2>
+<p><code><a href="reference/alloscore_model_out.html">alloscore_model_out()</a></code> takes a <code>model_out_tbl</code> of quantile forecasts and the matching <code>oracle_output</code>. The one thing you have to tell it is which task ID columns enumerate the targets that <em>share</em> a budget — here the locations, so each model, reference date and horizon is a separate allocation problem.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://reichlab.io/alloscore2/">alloscore2</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">model_out</span> <span class="op">&lt;-</span> <span class="fu">hubExamples</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/hubExamples/man/forecast_data.html" class="external-link">forecast_outputs</a></span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">output_type</span> <span class="op">==</span> <span class="st">"quantile"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">scores</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/alloscore_model_out.html">alloscore_model_out</a></span><span class="op">(</span></span>
+<span>  model_out_tbl <span class="op">=</span> <span class="va">model_out</span>,</span>
+<span>  oracle_output <span class="op">=</span> <span class="fu">hubExamples</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/hubExamples/man/forecast_data.html" class="external-link">forecast_oracle_output</a></span>,</span>
+<span>  K <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">500</span>, <span class="fl">1000</span>, <span class="fl">2000</span><span class="op">)</span>,</span>
+<span>  target_cols <span class="op">=</span> <span class="st">"location"</span>,</span>
+<span>  by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"model_id"</span>, <span class="st">"K"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">scores</span></span>
+<span><span class="co">#&gt; # A tibble: 9 × 6</span></span>
+<span><span class="co">#&gt;   model_id              K    score score_raw score_oracle  ytot</span></span>
+<span><span class="co">#&gt;   &lt;chr&gt;             &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;        &lt;dbl&gt; &lt;dbl&gt;</span></span>
+<span><span class="co">#&gt; 1 Flusight-baseline   500 -0.00553     1544.        1544. 2044.</span></span>
+<span><span class="co">#&gt; 2 Flusight-baseline  1000  0.342       1045.        1044. 2044.</span></span>
+<span><span class="co">#&gt; 3 Flusight-baseline  2000 50.7          228.         177. 2044.</span></span>
+<span><span class="co">#&gt; 4 MOBS-GLEAM_FLUH     500 -0.427       1544.        1544. 2044.</span></span>
+<span><span class="co">#&gt; 5 MOBS-GLEAM_FLUH    1000 -0.464       1044.        1044. 2044.</span></span>
+<span><span class="co">#&gt; 6 MOBS-GLEAM_FLUH    2000 29.4          207.         177. 2044.</span></span>
+<span><span class="co">#&gt; 7 PSI-DICE            500 -0.173       1544.        1544. 2044.</span></span>
+<span><span class="co">#&gt; 8 PSI-DICE           1000 -0.263       1044.        1044. 2044.</span></span>
+<span><span class="co">#&gt; 9 PSI-DICE           2000 53.1          230.         177. 2044.</span></span></code></pre></div>
+<p>The score is the realized loss less the oracle’s, so smaller is better. Because the budget is shared across locations, a model is rewarded for getting the <em>relative</em> burden across locations right, not just each location on its own.</p>
+<p>Passing <code>summarize = FALSE</code> returns one row per allocation problem, with a nested <code>xdf</code> column holding each target’s allocation, outcome and loss:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">detail</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/alloscore_model_out.html">alloscore_model_out</a></span><span class="op">(</span></span>
+<span>  model_out_tbl <span class="op">=</span> <span class="va">model_out</span>,</span>
+<span>  oracle_output <span class="op">=</span> <span class="fu">hubExamples</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/hubExamples/man/forecast_data.html" class="external-link">forecast_oracle_output</a></span>,</span>
+<span>  K <span class="op">=</span> <span class="fl">1000</span>,</span>
+<span>  target_cols <span class="op">=</span> <span class="st">"location"</span>,</span>
+<span>  summarize <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">detail</span><span class="op">$</span><span class="va">xdf</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="co">#&gt; # A tibble: 2 × 8</span></span>
+<span><span class="co">#&gt;   target_names     x score_fun     y oracle components_raw components_oracle components</span></span>
+<span><span class="co">#&gt;   &lt;chr&gt;        &lt;dbl&gt; &lt;list&gt;    &lt;dbl&gt;  &lt;dbl&gt;          &lt;dbl&gt;             &lt;dbl&gt;      &lt;dbl&gt;</span></span>
+<span><span class="co">#&gt; 1 25            32.3 &lt;fn&gt;         79   73.2           46.7              5.78       40.9</span></span>
+<span><span class="co">#&gt; 2 48           968.  &lt;fn&gt;       1230  927.           262.             303.        -40.9</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="allocating-without-scoring">Allocating without scoring<a class="anchor" aria-label="anchor" href="#allocating-without-scoring"></a>
+</h2>
+<p><code><a href="reference/allocate_model_out.html">allocate_model_out()</a></code> stops after the allocation, which is useful when the question is what a forecast implies you should do rather than how good it was:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/allocate_model_out.html">allocate_model_out</a></span><span class="op">(</span></span>
+<span>  model_out_tbl <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">model_out</span>, <span class="va">reference_date</span> <span class="op">==</span> <span class="st">"2022-11-19"</span>, <span class="va">horizon</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span>,</span>
+<span>  K <span class="op">=</span> <span class="fl">1000</span>,</span>
+<span>  target_cols <span class="op">=</span> <span class="st">"location"</span></span>
+<span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">model_id</span>, <span class="va">K</span>, <span class="va">xdf</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>allocations <span class="op">=</span> <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">xdf</span>, <span class="op">~</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">.x</span>, <span class="va">target_names</span>, <span class="va">x</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="op">-</span><span class="va">xdf</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">tidyr</span><span class="fu">::</span><span class="fu"><a href="https://tidyr.tidyverse.org/reference/unnest.html" class="external-link">unnest</a></span><span class="op">(</span><span class="va">allocations</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # A tibble: 6 × 4</span></span>
+<span><span class="co">#&gt;   model_id              K target_names     x</span></span>
+<span><span class="co">#&gt;   &lt;chr&gt;             &lt;dbl&gt; &lt;chr&gt;        &lt;dbl&gt;</span></span>
+<span><span class="co">#&gt; 1 Flusight-baseline  1000 25            32.3</span></span>
+<span><span class="co">#&gt; 2 Flusight-baseline  1000 48           968. </span></span>
+<span><span class="co">#&gt; 3 MOBS-GLEAM_FLUH    1000 25            30.2</span></span>
+<span><span class="co">#&gt; 4 MOBS-GLEAM_FLUH    1000 48           970. </span></span>
+<span><span class="co">#&gt; 5 PSI-DICE           1000 25            32.5</span></span>
+<span><span class="co">#&gt; 6 PSI-DICE           1000 48           967.</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="working-outside-the-hubverse">Working outside the hubverse<a class="anchor" aria-label="anchor" href="#working-outside-the-hubverse"></a>
+</h2>
+<p>The allocation machinery does not require hub data. Forecasts can be given as any parametric family, with <code><a href="reference/add_pdqr_funs.html">add_pdqr_funs()</a></code> building the cdfs and quantile functions from parameter columns:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">forecasts</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/add_pdqr_funs.html">add_pdqr_funs</a></span><span class="op">(</span></span>
+<span>  <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>    target_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"a"</span>, <span class="st">"b"</span>, <span class="st">"c"</span><span class="op">)</span>,</span>
+<span>    dist <span class="op">=</span> <span class="st">"norm"</span>,</span>
+<span>    mean <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>, <span class="fl">8</span>, <span class="fl">12</span><span class="op">)</span>,</span>
+<span>    sd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  types <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"p"</span>, <span class="st">"q"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/alloscore.html">alloscore</a></span><span class="op">(</span><span class="va">forecasts</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">9</span>, <span class="fl">11</span><span class="op">)</span>, K <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">20</span>, <span class="fl">30</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">K</span>, <span class="va">score</span>, <span class="va">score_raw</span>, <span class="va">score_oracle</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # A tibble: 3 × 4</span></span>
+<span><span class="co">#&gt;       K  score score_raw score_oracle</span></span>
+<span><span class="co">#&gt;   &lt;dbl&gt;  &lt;dbl&gt;     &lt;dbl&gt;        &lt;dbl&gt;</span></span>
+<span><span class="co">#&gt; 1    10 0.0154     14.0            14</span></span>
+<span><span class="co">#&gt; 2    20 0.167       4.17            4</span></span>
+<span><span class="co">#&gt; 3    30 0           0               0</span></span></code></pre></div>
+<p>The loss is a generalized piecewise linear (pinball) loss, so <code>alpha</code> sets how much worse it is to under-allocate than to over-allocate, <code>kappa</code> scales it, and <code>w</code> gives the cost per unit allocated to each target. The <code><a href="reference/stdize_news_params.html">stdize_news_params()</a></code>, <code><a href="reference/stdize_ou_params.html">stdize_ou_params()</a></code> and <code><a href="reference/stdize_met_params.html">stdize_met_params()</a></code> helpers convert the newsvendor, over/under-cost and cost-loss parameterizations into <code>kappa</code> and <code>alpha</code>.</p>
+</div>
+<div class="section level2">
+<h2 id="validation">Validation<a class="anchor" aria-label="anchor" href="#validation"></a>
+</h2>
+<p>The <code>zxh_tab2</code> and <code>zxh_tab3</code> datasets carry the published optima of two budget-constrained multiproduct newsboy problems from Zhang, Xu and Hua (2009), which <code><a href="reference/allocate.html">allocate()</a></code> reproduces. See <code><a href="articles/zxh-newsvendor.html">vignette("zxh-newsvendor")</a></code>.</p>
+</div>
+<div class="section level2">
+<h2 id="code-of-conduct">Code of Conduct<a class="anchor" aria-label="anchor" href="#code-of-conduct"></a>
+</h2>
+<p>Please note that this package is released with a <a href="CODE_OF_CONDUCT.html">Contributor Code of Conduct</a>. By contributing to this project, you agree to abide by its terms.</p>
+</div>
+<div class="section level2">
+<h2 id="contributing">Contributing<a class="anchor" aria-label="anchor" href="#contributing"></a>
+</h2>
+<p>Interested in contributing back to the project? Please see our <a href="CONTRIBUTING.html">contributing guidelines</a>.</p>
+</div>
 </div>
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>

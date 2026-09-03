@@ -13,7 +13,7 @@ gpl(adf)
 - adf:
 
   an object of class `allocated`, as returned by
-  [`allocate()`](https://reichlab.github.io/alloscore2/reference/allocate.md).
+  [`allocate()`](https://reichlab.io/alloscore2/reference/allocate.md).
 
 ## Value
 

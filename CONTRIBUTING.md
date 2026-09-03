@@ -121,6 +121,5 @@ without modifying: `air format . --check`
 ## Code of Conduct
 
 Please note that the alloscore2 project is released with a [Contributor
-Code of
-Conduct](https://reichlab.github.io/alloscore2/CODE_OF_CONDUCT.md). By
+Code of Conduct](https://reichlab.io/alloscore2/CODE_OF_CONDUCT.md). By
 contributing to this project you agree to abide by its terms.

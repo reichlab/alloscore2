@@ -14,7 +14,7 @@ weights(object, ...)
 - object:
 
   an `allocated` object, as returned by
-  [`allocate()`](https://reichlab.github.io/alloscore2/reference/allocate.md).
+  [`allocate()`](https://reichlab.io/alloscore2/reference/allocate.md).
 
 - ...:
 
