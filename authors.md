@@ -11,7 +11,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/reichlab/alloscore2/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/reichlab/alloscore2/blob/v0.1.0/DESCRIPTION)
 
 Gerding A, Reich N (2026). *alloscore2: Allocation Scoring Rules for
 Hubverse Model Output*. R package version 0.1.0,
