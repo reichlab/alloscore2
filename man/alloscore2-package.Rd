@@ -11,7 +11,7 @@ Implements allocation scoring rules for evaluating probabilistic forecasts. Give
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://reichlab.github.io/alloscore2/}
+  \item \url{https://reichlab.io/alloscore2/}
   \item \url{https://github.com/reichlab/alloscore2}
   \item Report bugs at \url{https://github.com/reichlab/alloscore2/issues}
 }

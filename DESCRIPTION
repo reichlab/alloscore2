@@ -1,6 +1,6 @@
 Package: alloscore2
 Title: Allocation Scoring Rules for Hubverse Model Output
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: c(
     person(given = "Aaron",
            family = "Gerding",
@@ -43,15 +43,19 @@ Suggests:
     covr,
     hubExamples,
     jsonlite,
-    testthat (>= 3.0.0)
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0),
+    withr
 Remotes:
     hubverse-org/hubExamples
 Depends:
     R (>= 4.1.0)
 LazyData: true
 Roxygen: list(markdown = TRUE)
-URL: https://reichlab.github.io/alloscore2/, https://github.com/reichlab/alloscore2
+URL: https://reichlab.io/alloscore2/, https://github.com/reichlab/alloscore2
 BugReports: https://github.com/reichlab/alloscore2/issues
 Config/testthat/edition: 3
 Config/Needs/website: hubverse-org/hubStyle
+VignetteBuilder: knitr
 Config/roxygen2/version: 8.1.0
