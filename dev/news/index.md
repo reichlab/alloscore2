@@ -1,0 +1,105 @@
+# Changelog
+
+## alloscore2 0.1.0.9000
+
+## alloscore2 0.1.0
+
+- Initial package setup: repository layout, GitHub Actions workflows for
+  `R CMD check`, lint, format, test coverage and pkgdown, and the Air
+  and lintr configuration.
+
+- Ported the allocation and scoring machinery from the original
+  [alloscore](https://github.com/aaronger/alloscore):
+  [`allocate()`](https://reichlab.io/alloscore2/dev/reference/allocate.md),
+  [`alloscore()`](https://reichlab.io/alloscore2/dev/reference/alloscore.md)
+  and its methods,
+  [`post_process()`](https://reichlab.io/alloscore2/dev/reference/post_process.md),
+  the oracle functions, the gpl loss family,
+  [`add_pdqr_funs()`](https://reichlab.io/alloscore2/dev/reference/add_pdqr_funs.md),
+  [`slim()`](https://reichlab.io/alloscore2/dev/reference/slim.md), the
+  `stdize_*_params()` helpers and the `zxh_tab2` and `zxh_tab3`
+  datasets.
+
+- Ported
+  [`plot_components()`](https://reichlab.io/alloscore2/dev/reference/plot_components.md),
+  [`plot_components_slim()`](https://reichlab.io/alloscore2/dev/reference/plot_components_slim.md),
+  [`plot_scores_slim()`](https://reichlab.io/alloscore2/dev/reference/plot_scores_slim.md)
+  and
+  [`plot_iterations()`](https://reichlab.io/alloscore2/dev/reference/plot_iterations.md).
+
+- Added
+  [`as_alloscore_df()`](https://reichlab.io/alloscore2/dev/reference/as_alloscore_df.md),
+  [`allocate_model_out()`](https://reichlab.io/alloscore2/dev/reference/allocate_model_out.md)
+  and
+  [`alloscore_model_out()`](https://reichlab.io/alloscore2/dev/reference/alloscore_model_out.md),
+  which take a hubverse `model_out_tbl` and `oracle_output` directly.
+  Predictive quantiles are turned into cdfs and quantile functions with
+  `distfromq`, so the conversion that callers used to hand-roll is no
+  longer needed. Only the `quantile` output type is supported.
+
+- Added a README with runnable examples and two vignettes: an overview
+  of scoring hubverse forecasts, and the validation against published
+  newsvendor optima.
+
+- Results agree with the original package to within root-finding
+  tolerance; see `tests/testthat/test-legacy-equivalence.R`.
+
+### Bug fixes relative to the original package
+
+- The `O`/`U` over/under-cost parameterization now works.
+  [`gpl_loss_fun()`](https://reichlab.io/alloscore2/dev/reference/gpl_loss_fun.md)
+  and
+  [`exp_gpl_loss_fun()`](https://reichlab.io/alloscore2/dev/reference/exp_gpl_loss_fun.md)
+  previously errored on it and
+  [`dexp_gpl_loss()`](https://reichlab.io/alloscore2/dev/reference/dexp_gpl_loss.md)
+  silently returned `NULL`.
+
+- A supplied `dg` is now honored instead of being silently discarded and
+  recomputed from `g`.
+
+- [`exp_gpl_loss_fun()`](https://reichlab.io/alloscore2/dev/reference/exp_gpl_loss_fun.md)
+  now applies its `offset` argument, which was accepted and ignored.
+
+- [`new_gpl_df()`](https://reichlab.io/alloscore2/dev/reference/new_gpl_df.md)
+  can infer `N` from its arguments; the code path referred to an
+  undefined variable.
+
+- [`alloscore()`](https://reichlab.io/alloscore2/dev/reference/alloscore.md)
+  on a `slim` object now honors `against_oracle`, which was accepted and
+  ignored.
+
+- [`allocate()`](https://reichlab.io/alloscore2/dev/reference/allocate.md)
+  returns a well-formed `allocated` object when no target has any
+  marginal benefit. It previously returned a data frame with no `xdf`
+  column, no class and no attributes, which nothing downstream could
+  consume.
+
+- [`allocate()`](https://reichlab.io/alloscore2/dev/reference/allocate.md)
+  now fails with a clear message when `g` has an unbounded derivative at
+  zero, as `g = "log(x)"` does. It previously emitted messages and
+  returned its initial iterate unchanged. Use a shifted increment
+  function such as `g = "log(1 + x)"`.
+
+- Every dplyr and tidyr call is namespaced and declared. The original
+  package only worked with the tidyverse attached.
+
+- [`weights.allocated()`](https://reichlab.io/alloscore2/dev/reference/weights.allocated.md)
+  and
+  [`alloscore.slim()`](https://reichlab.io/alloscore2/dev/reference/alloscore.md)
+  now match the signatures of their generics.
+
+- [`plot_components()`](https://reichlab.io/alloscore2/dev/reference/plot_components.md)
+  and
+  [`plot_scores_slim()`](https://reichlab.io/alloscore2/dev/reference/plot_scores_slim.md)
+  work. They previously called the nonexistent
+  [`tidyr::any_of()`](https://tidyselect.r-lib.org/reference/all_of.html)
+  and referred to an undefined variable respectively.
+
+- [`plot_iterations()`](https://reichlab.io/alloscore2/dev/reference/plot_iterations.md)
+  no longer calls [`require()`](https://rdrr.io/r/base/library.html) at
+  runtime; `patchwork` is a declared dependency. It also accepts a
+  single row of
+  [`allocate_model_out()`](https://reichlab.io/alloscore2/dev/reference/allocate_model_out.md)
+  output, not only an `allocated` object.
+
+- Every ggplot2, forcats and scales call is namespaced and declared.
